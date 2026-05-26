@@ -52,6 +52,9 @@ class PdfEditorFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.recyclerPdfPages.adapter = adapter
+        adapter.onPageVisible = { pageIndex ->
+            viewModel.updateVisiblePage(pageIndex)
+        }
 
         binding.signatureOverlayView.onOverlaysChanged = { visiblePageOverlays ->
             val pageIndex = currentPageIndex()
@@ -64,6 +67,7 @@ class PdfEditorFragment : Fragment() {
             binding.recyclerPdfPages.addOnScrollListener(object : androidx.recyclerview.widget.RecyclerView.OnScrollListener() {
                 override fun onScrolled(recyclerView: androidx.recyclerview.widget.RecyclerView, dx: Int, dy: Int) {
                     super.onScrolled(recyclerView, dx, dy)
+                    viewModel.updateVisiblePage(currentPageIndex())
                     renderCurrentPageOverlays()
                 }
             })
@@ -81,6 +85,14 @@ class PdfEditorFragment : Fragment() {
 
         binding.btnSaveAndShare.setOnClickListener {
             viewModel.exportAndShare()
+        }
+
+        binding.btnUndo.setOnClickListener {
+            viewModel.undoOverlay()
+        }
+
+        binding.btnRedo.setOnClickListener {
+            viewModel.redoOverlay()
         }
 
         parentFragmentManager.setFragmentResultListener(
@@ -176,6 +188,22 @@ class PdfEditorFragment : Fragment() {
                         Snackbar.make(binding.root, state.message, Snackbar.LENGTH_LONG).show()
                         viewModel.resetExportState()
                     }
+                }
+            }
+        }
+
+        lifecycleScope.launchWhenStarted {
+            viewModel.loadError.collectLatest { errorMessage ->
+                if (errorMessage != null) {
+                    AlertDialog.Builder(requireContext())
+                        .setTitle("Error")
+                        .setMessage(errorMessage)
+                        .setCancelable(false)
+                        .setPositiveButton("OK") { _, _ ->
+                            viewModel.clearLoadError()
+                            findNavController().navigateUp()
+                        }
+                        .show()
                 }
             }
         }

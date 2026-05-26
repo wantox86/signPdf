@@ -601,3 +601,16 @@ Tasks:
     - Implemented `ShareHelper` using `FileProvider` + `Intent.ACTION_SEND`.
     - Added `Simpan & Share` button in editor and wired export flow in `PdfEditorViewModel` with `ExportState` (Idle/Loading/Success/Error).
     - Added loading dialog, success share trigger, and error Snackbar handling in `PdfEditorFragment`.
+
+### Sprint 5 — Polish & Edge Cases (Completed 2026-05-26)
+- Status: DONE
+- Build check: `./gradlew assembleDebug` passed
+- Unit test check: `./gradlew testDebugUnitTest` passed
+- Notes:
+    - Multi-page overlays remain scoped by `pageIndex` and embed flow groups overlays per page.
+    - Added undo/redo stack in `PdfEditorViewModel` using `ArrayDeque<List<SignatureOverlay>>` snapshots.
+    - Added undo/redo UI buttons in editor.
+    - Implemented loading skeleton per page in RecyclerView item while bitmap is not yet rendered.
+    - Added PDF load error handling with dialog and safe navigation back to Home; invalid PDF (`0` pages) shows "File PDF tidak valid".
+    - Enforced generic export failure message "Gagal menyimpan PDF".
+    - Refactored PDF rendering to on-demand page loading with nearby-page cache and recycling of far page bitmaps to reduce memory usage.

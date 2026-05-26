@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.File
+import kotlin.math.abs
 
 sealed class ExportState {
     data object Idle : ExportState()
@@ -28,37 +29,79 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
     private val pdfRepository = PdfRepository(app)
     private val embedSignatureToPdfUseCase = EmbedSignatureToPdfUseCase(app)
     private val exportPdfUseCase = ExportPdfUseCase(embedSignatureToPdfUseCase)
-    private val _pages = MutableStateFlow<List<Bitmap>>(emptyList())
-    val pages: StateFlow<List<Bitmap>> = _pages
+    private val _pages = MutableStateFlow<List<Bitmap?>>(emptyList())
+    val pages: StateFlow<List<Bitmap?>> = _pages
     private val _overlays = MutableStateFlow<List<SignatureOverlay>>(emptyList())
     val overlays: StateFlow<List<SignatureOverlay>> = _overlays
     private val _exportState = MutableStateFlow<ExportState>(ExportState.Idle)
     val exportState: StateFlow<ExportState> = _exportState
+    private val _isLoadingPages = MutableStateFlow(false)
+    val isLoadingPages: StateFlow<Boolean> = _isLoadingPages
+    private val _loadError = MutableStateFlow<String?>(null)
+    val loadError: StateFlow<String?> = _loadError
 
     private var pdfDocument: PdfDocument? = null
+    private val undoStack = ArrayDeque<List<SignatureOverlay>>()
+    private val redoStack = ArrayDeque<List<SignatureOverlay>>()
 
     fun loadPdf(uriString: String) {
         val context = getApplication<Application>()
         viewModelScope.launch {
-            val uri = Uri.parse(uriString)
-            val pdfDoc = PDDocument.load(context.contentResolver.openInputStream(uri))
-            val pageCount = pdfDoc.numberOfPages
-            pdfDoc.close()
-            val fileName = uri.lastPathSegment ?: "document.pdf"
-            pdfDocument = PdfDocument(uri, fileName, pageCount)
-            val bitmaps = mutableListOf<Bitmap>()
-            for (i in 0 until pageCount) {
-                val bitmap = pdfRepository.renderPage(pdfDocument!!, i)
-                bitmaps.add(bitmap)
+            try {
+                val uri = Uri.parse(uriString)
+                val inputStream = context.contentResolver.openInputStream(uri)
+                    ?: throw IllegalArgumentException("Gagal membuka PDF")
+                val pdfDoc = PDDocument.load(inputStream)
+                val pageCount = pdfDoc.numberOfPages
+                pdfDoc.close()
+
+                if (pageCount <= 0) {
+                    _loadError.value = "File PDF tidak valid"
+                    return@launch
+                }
+
+                val fileName = uri.lastPathSegment ?: "document.pdf"
+                pdfDocument = PdfDocument(uri, fileName, pageCount)
+                _pages.value = List(pageCount) { null }
+                _isLoadingPages.value = true
+                updateVisiblePage(0)
+            } catch (e: Exception) {
+                _loadError.value = e.message ?: "Gagal membuka PDF"
             }
-            _pages.value = bitmaps
+        }
+    }
+
+    fun updateVisiblePage(currentIndex: Int) {
+        val document = pdfDocument ?: return
+        viewModelScope.launch {
+            val mutablePages = _pages.value.toMutableList()
+            if (mutablePages.isEmpty()) return@launch
+
+            val start = (currentIndex - 1).coerceAtLeast(0)
+            val end = (currentIndex + 1).coerceAtMost(mutablePages.lastIndex)
+
+            for (index in start..end) {
+                if (mutablePages[index] == null) {
+                    mutablePages[index] = pdfRepository.renderPage(document, index)
+                }
+            }
+
+            for (index in mutablePages.indices) {
+                if (abs(index - currentIndex) > 2 && mutablePages[index] != null) {
+                    mutablePages[index]?.recycle()
+                    mutablePages[index] = null
+                }
+            }
+
+            _pages.value = mutablePages
+            _isLoadingPages.value = mutablePages.any { it == null }
         }
     }
 
     fun addOverlay(type: OverlayType, bitmap: Bitmap, pageIndex: Int) {
-        val pageBitmap = _pages.value.getOrNull(pageIndex) ?: return
-        val pageWidth = pageBitmap.width.toFloat()
-        val pageHeight = pageBitmap.height.toFloat()
+        val pageBitmap = _pages.value.getOrNull(pageIndex)
+        val pageWidth = pageBitmap?.width?.toFloat() ?: 1080f
+        val pageHeight = pageBitmap?.height?.toFloat() ?: 1528f
         val defaultWidth = pageWidth * 0.30f
         val aspectRatio = if (bitmap.width > 0) bitmap.height.toFloat() / bitmap.width.toFloat() else 0.35f
         val defaultHeight = defaultWidth * aspectRatio
@@ -73,11 +116,26 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
             height = defaultHeight
         )
 
+        pushHistory()
         _overlays.value = _overlays.value + overlay
     }
 
     fun updateOverlays(newOverlays: List<SignatureOverlay>) {
+        if (_overlays.value == newOverlays) return
+        pushHistory()
         _overlays.value = newOverlays
+    }
+
+    fun undoOverlay() {
+        if (undoStack.isEmpty()) return
+        redoStack.addLast(_overlays.value)
+        _overlays.value = undoStack.removeLast()
+    }
+
+    fun redoOverlay() {
+        if (redoStack.isEmpty()) return
+        undoStack.addLast(_overlays.value)
+        _overlays.value = redoStack.removeLast()
     }
 
     fun exportAndShare() {
@@ -93,9 +151,18 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
                 pdfDocument = updatedDocument
                 _exportState.value = ExportState.Success(outputFile)
             } catch (e: Exception) {
-                _exportState.value = ExportState.Error(e.message ?: "Gagal menyimpan PDF")
+                _exportState.value = ExportState.Error("Gagal menyimpan PDF")
             }
         }
+    }
+
+    fun clearLoadError() {
+        _loadError.value = null
+    }
+
+    private fun pushHistory() {
+        undoStack.addLast(_overlays.value)
+        redoStack.clear()
     }
 
     fun resetExportState() {

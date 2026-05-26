@@ -6,6 +6,29 @@
     android:layout_height="match_parent"
     tools:context=".ui.editor.PdfEditorFragment">
 
+    <LinearLayout
+        android:id="@+id/toolbar_actions"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_margin="12dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <Button
+            android:id="@+id/btn_undo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Undo" />
+
+        <Button
+            android:id="@+id/btn_redo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Redo" />
+    </LinearLayout>
+
     <FrameLayout
         android:id="@+id/editor_container"
         android:layout_width="match_parent"
