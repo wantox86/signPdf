@@ -579,3 +579,14 @@ Tasks:
     - Implemented `SignaturePickerBottomSheet` with fragment result contract (`signature_picker`).
     - Wired image import flow in editor using `ActivityResultContracts.GetContent("image/*")` + Coil.
     - Added upfront runtime permission request in `MainActivity` (API-aware: `READ_MEDIA_IMAGES` / `READ_EXTERNAL_STORAGE`).
+
+### Sprint 3 — Overlay & Drag (Completed 2026-05-26)
+- Status: DONE
+- Build check: `./gradlew assembleDebug` passed
+- Unit test check: `./gradlew testDebugUnitTest` passed
+- Notes:
+    - Added immutable `SignatureOverlay` model and `OverlayType` enum usage in editor flow.
+    - Implemented `SignatureOverlayView` custom view with hit test, drag, pinch resize, dashed selection border, corner handle, and delete `x` control.
+    - Added overlay layer on top of PDF RecyclerView in editor layout.
+    - Updated `PdfEditorViewModel` with `addOverlay()` and `updateOverlays()`.
+    - Connected signature result flow from canvas/import to overlay insertion in `PdfEditorFragment`.

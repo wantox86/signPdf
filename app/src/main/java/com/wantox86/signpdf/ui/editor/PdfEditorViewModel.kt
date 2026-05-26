@@ -7,6 +7,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.wantox86.signpdf.data.PdfRepository
+import com.wantox86.signpdf.domain.model.OverlayType
 import com.wantox86.signpdf.domain.model.PdfDocument
 import com.wantox86.signpdf.domain.model.SignatureOverlay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,5 +39,30 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
             }
             _pages.value = bitmaps
         }
+    }
+
+    fun addOverlay(type: OverlayType, bitmap: Bitmap, pageIndex: Int) {
+        val pageBitmap = _pages.value.getOrNull(pageIndex) ?: return
+        val pageWidth = pageBitmap.width.toFloat()
+        val pageHeight = pageBitmap.height.toFloat()
+        val defaultWidth = pageWidth * 0.30f
+        val aspectRatio = if (bitmap.width > 0) bitmap.height.toFloat() / bitmap.width.toFloat() else 0.35f
+        val defaultHeight = defaultWidth * aspectRatio
+
+        val overlay = SignatureOverlay(
+            type = type,
+            bitmap = bitmap,
+            pageIndex = pageIndex,
+            x = (pageWidth - defaultWidth) / 2f,
+            y = (pageHeight - defaultHeight) / 2f,
+            width = defaultWidth,
+            height = defaultHeight
+        )
+
+        _overlays.value = _overlays.value + overlay
+    }
+
+    fun updateOverlays(newOverlays: List<SignatureOverlay>) {
+        _overlays.value = newOverlays
     }
 }

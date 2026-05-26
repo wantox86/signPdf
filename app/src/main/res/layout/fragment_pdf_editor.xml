@@ -6,14 +6,25 @@
     android:layout_height="match_parent"
     tools:context=".ui.editor.PdfEditorFragment">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recycler_pdf_pages"
+    <FrameLayout
+        android:id="@+id/editor_container"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:clipToPadding="false"
-        android:padding="8dp"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        tools:listitem="@layout/item_pdf_page" />
+        android:layout_height="match_parent">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler_pdf_pages"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:padding="8dp"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            tools:listitem="@layout/item_pdf_page" />
+
+        <com.wantox86.signpdf.ui.editor.SignatureOverlayView
+            android:id="@+id/signature_overlay_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </FrameLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_add_paraf"

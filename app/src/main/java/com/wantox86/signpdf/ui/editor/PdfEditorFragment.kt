@@ -12,8 +12,10 @@ import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.wantox86.signpdf.databinding.FragmentPdfEditorBinding
 import com.wantox86.signpdf.domain.model.OverlayType
+import com.wantox86.signpdf.domain.model.SignatureOverlay
 import com.wantox86.signpdf.ui.signature.SignaturePickerBottomSheet
 import com.wantox86.signpdf.ui.signature.SignatureViewModel
 import kotlinx.coroutines.flow.collectLatest
@@ -25,6 +27,9 @@ class PdfEditorFragment : Fragment() {
     private val signatureViewModel: SignatureViewModel by activityViewModels()
     private val adapter = PdfPageAdapter()
     private var pendingImportType: OverlayType = OverlayType.TTD
+    private var awaitingOverlayType: OverlayType? = null
+    private var awaitingPreviousBitmapRef: Any? = null
+    private var allOverlays: List<SignatureOverlay> = emptyList()
 
     private val importImageLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
@@ -42,6 +47,22 @@ class PdfEditorFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.recyclerPdfPages.adapter = adapter
+
+        binding.signatureOverlayView.onOverlaysChanged = { visiblePageOverlays ->
+            val pageIndex = currentPageIndex()
+            val merged = allOverlays
+                .filter { it.pageIndex != pageIndex } + visiblePageOverlays.map { it.copy(pageIndex = pageIndex) }
+            viewModel.updateOverlays(merged)
+        }
+
+        (binding.recyclerPdfPages.layoutManager as? LinearLayoutManager)?.let {
+            binding.recyclerPdfPages.addOnScrollListener(object : androidx.recyclerview.widget.RecyclerView.OnScrollListener() {
+                override fun onScrolled(recyclerView: androidx.recyclerview.widget.RecyclerView, dx: Int, dy: Int) {
+                    super.onScrolled(recyclerView, dx, dy)
+                    renderCurrentPageOverlays()
+                }
+            })
+        }
 
         binding.fabAddTtd.setOnClickListener {
             SignaturePickerBottomSheet.newInstance(OverlayType.TTD)
@@ -63,6 +84,11 @@ class PdfEditorFragment : Fragment() {
 
             when (action) {
                 "canvas" -> {
+                    awaitingOverlayType = overlayType
+                    awaitingPreviousBitmapRef = when (overlayType) {
+                        OverlayType.TTD -> signatureViewModel.ttdBitmap.value
+                        OverlayType.PARAF -> signatureViewModel.parafBitmap.value
+                    }
                     findNavController().navigate(
                         com.wantox86.signpdf.R.id.signatureCanvasFragment,
                         bundleOf("type" to overlayType.name)
@@ -70,6 +96,11 @@ class PdfEditorFragment : Fragment() {
                 }
 
                 "import" -> {
+                    awaitingOverlayType = overlayType
+                    awaitingPreviousBitmapRef = when (overlayType) {
+                        OverlayType.TTD -> signatureViewModel.ttdBitmap.value
+                        OverlayType.PARAF -> signatureViewModel.parafBitmap.value
+                    }
                     pendingImportType = overlayType
                     importImageLauncher.launch("image/*")
                 }
@@ -84,6 +115,53 @@ class PdfEditorFragment : Fragment() {
                 adapter.setPages(pages)
             }
         }
+
+        lifecycleScope.launchWhenStarted {
+            viewModel.overlays.collectLatest { overlays ->
+                allOverlays = overlays
+                renderCurrentPageOverlays()
+            }
+        }
+
+        lifecycleScope.launchWhenStarted {
+            signatureViewModel.ttdBitmap.collectLatest { bitmap ->
+                if (
+                    awaitingOverlayType == OverlayType.TTD &&
+                    bitmap != null &&
+                    bitmap !== awaitingPreviousBitmapRef
+                ) {
+                    viewModel.addOverlay(OverlayType.TTD, bitmap, currentPageIndex())
+                    awaitingOverlayType = null
+                    awaitingPreviousBitmapRef = null
+                }
+            }
+        }
+
+        lifecycleScope.launchWhenStarted {
+            signatureViewModel.parafBitmap.collectLatest { bitmap ->
+                if (
+                    awaitingOverlayType == OverlayType.PARAF &&
+                    bitmap != null &&
+                    bitmap !== awaitingPreviousBitmapRef
+                ) {
+                    viewModel.addOverlay(OverlayType.PARAF, bitmap, currentPageIndex())
+                    awaitingOverlayType = null
+                    awaitingPreviousBitmapRef = null
+                }
+            }
+        }
+    }
+
+    private fun currentPageIndex(): Int {
+        val layoutManager = binding.recyclerPdfPages.layoutManager as? LinearLayoutManager
+        val index = layoutManager?.findFirstVisibleItemPosition() ?: 0
+        return if (index < 0) 0 else index
+    }
+
+    private fun renderCurrentPageOverlays() {
+        val pageIndex = currentPageIndex()
+        val overlaysForCurrentPage = allOverlays.filter { it.pageIndex == pageIndex }
+        binding.signatureOverlayView.setOverlays(overlaysForCurrentPage)
     }
 
     override fun onDestroyView() {
