@@ -24,4 +24,14 @@
             app:argType="string" />
     </fragment>
 
+    <fragment
+        android:id="@+id/signatureCanvasFragment"
+        android:name="com.wantox86.signpdf.ui.signature.SignatureCanvasFragment"
+        android:label="Signature Canvas"
+        tools:layout="@layout/fragment_signature_canvas">
+        <argument
+            android:name="type"
+            app:argType="string" />
+    </fragment>
+
 </navigation>

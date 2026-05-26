@@ -568,3 +568,14 @@ Tasks:
     - Updated dependency coordinates to resolvable artifacts:
         - `com.tom-roush:pdfbox-android:2.0.27.0`
         - `com.github.gcacace:signature-pad:1.3.1`
+
+### Sprint 2 — Signature Input (Completed 2026-05-26)
+- Status: DONE
+- Build check: `./gradlew assembleDebug` passed
+- Unit test check: `./gradlew testDebugUnitTest` passed
+- Notes:
+    - Added `SignatureSource`, `SignatureRepository`, and `SignatureViewModel` for in-memory signature state.
+    - Implemented `SignatureCanvasFragment` using `transparentSignatureBitmap`.
+    - Implemented `SignaturePickerBottomSheet` with fragment result contract (`signature_picker`).
+    - Wired image import flow in editor using `ActivityResultContracts.GetContent("image/*")` + Coil.
+    - Added upfront runtime permission request in `MainActivity` (API-aware: `READ_MEDIA_IMAGES` / `READ_EXTERNAL_STORAGE`).
