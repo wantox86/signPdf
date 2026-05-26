@@ -590,3 +590,14 @@ Tasks:
     - Added overlay layer on top of PDF RecyclerView in editor layout.
     - Updated `PdfEditorViewModel` with `addOverlay()` and `updateOverlays()`.
     - Connected signature result flow from canvas/import to overlay insertion in `PdfEditorFragment`.
+
+### Sprint 4 — Embed & Share (Completed 2026-05-26)
+- Status: DONE
+- Build check: `./gradlew assembleDebug` passed
+- Unit test check: `./gradlew testDebugUnitTest` passed
+- Notes:
+    - Implemented `EmbedSignatureToPdfUseCase` with Android-to-PDF coordinate conversion and scale mapping.
+    - Added `ExportPdfUseCase` to orchestrate embed result and update output path on `PdfDocument`.
+    - Implemented `ShareHelper` using `FileProvider` + `Intent.ACTION_SEND`.
+    - Added `Simpan & Share` button in editor and wired export flow in `PdfEditorViewModel` with `ExportState` (Idle/Loading/Success/Error).
+    - Added loading dialog, success share trigger, and error Snackbar handling in `PdfEditorFragment`.

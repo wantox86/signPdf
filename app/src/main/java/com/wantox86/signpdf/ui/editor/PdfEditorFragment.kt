@@ -1,10 +1,12 @@
 package com.wantox86.signpdf.ui.editor
 
+import android.app.AlertDialog
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ProgressBar
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
@@ -13,9 +15,11 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.snackbar.Snackbar
 import com.wantox86.signpdf.databinding.FragmentPdfEditorBinding
 import com.wantox86.signpdf.domain.model.OverlayType
 import com.wantox86.signpdf.domain.model.SignatureOverlay
+import com.wantox86.signpdf.ui.share.ShareHelper
 import com.wantox86.signpdf.ui.signature.SignaturePickerBottomSheet
 import com.wantox86.signpdf.ui.signature.SignatureViewModel
 import kotlinx.coroutines.flow.collectLatest
@@ -30,6 +34,7 @@ class PdfEditorFragment : Fragment() {
     private var awaitingOverlayType: OverlayType? = null
     private var awaitingPreviousBitmapRef: Any? = null
     private var allOverlays: List<SignatureOverlay> = emptyList()
+    private var progressDialog: AlertDialog? = null
 
     private val importImageLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
@@ -72,6 +77,10 @@ class PdfEditorFragment : Fragment() {
         binding.fabAddParaf.setOnClickListener {
             SignaturePickerBottomSheet.newInstance(OverlayType.PARAF)
                 .show(parentFragmentManager, "signature_picker_paraf")
+        }
+
+        binding.btnSaveAndShare.setOnClickListener {
+            viewModel.exportAndShare()
         }
 
         parentFragmentManager.setFragmentResultListener(
@@ -150,6 +159,26 @@ class PdfEditorFragment : Fragment() {
                 }
             }
         }
+
+        lifecycleScope.launchWhenStarted {
+            viewModel.exportState.collectLatest { state ->
+                when (state) {
+                    is ExportState.Idle -> hideProgress()
+                    is ExportState.Loading -> showProgress()
+                    is ExportState.Success -> {
+                        hideProgress()
+                        ShareHelper.sharePdf(requireContext(), state.file)
+                        viewModel.resetExportState()
+                    }
+
+                    is ExportState.Error -> {
+                        hideProgress()
+                        Snackbar.make(binding.root, state.message, Snackbar.LENGTH_LONG).show()
+                        viewModel.resetExportState()
+                    }
+                }
+            }
+        }
     }
 
     private fun currentPageIndex(): Int {
@@ -164,7 +193,22 @@ class PdfEditorFragment : Fragment() {
         binding.signatureOverlayView.setOverlays(overlaysForCurrentPage)
     }
 
+    private fun showProgress() {
+        if (progressDialog?.isShowing == true) return
+        progressDialog = AlertDialog.Builder(requireContext())
+            .setView(ProgressBar(requireContext()))
+            .setCancelable(false)
+            .create()
+        progressDialog?.show()
+    }
+
+    private fun hideProgress() {
+        progressDialog?.dismiss()
+        progressDialog = null
+    }
+
     override fun onDestroyView() {
+        hideProgress()
         super.onDestroyView()
         _binding = null
     }
