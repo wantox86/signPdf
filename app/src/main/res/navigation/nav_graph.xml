@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    app:startDestination="@id/homeFragment">
+
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="com.wantox86.signpdf.ui.home.HomeFragment"
+        android:label="Home"
+        tools:layout="@layout/fragment_home" >
+        <action
+            android:id="@+id/action_homeFragment_to_pdfEditorFragment"
+            app:destination="@id/pdfEditorFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/pdfEditorFragment"
+        android:name="com.wantox86.signpdf.ui.editor.PdfEditorFragment"
+        android:label="PDF Editor"
+        tools:layout="@layout/fragment_pdf_editor">
+        <argument
+            android:name="pdfUri"
+            app:argType="string" />
+    </fragment>
+
+</navigation>

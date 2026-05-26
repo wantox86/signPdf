@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SignPDF</string>
+    <string name="open_pdf">Buka PDF</string>
+    <string name="add_ttd">Tambah TTD</string>
+    <string name="add_paraf">Tambah Paraf</string>
+    <string name="save_and_share">Simpan &amp; Share</string>
+    <string name="clear">Hapus</string>
+    <string name="confirm">Konfirmasi</string>
+    <string name="draw_on_screen">Gambar di Layar</string>
+    <string name="import_image">Import Gambar</string>
+    <string name="error_pdf_load">Gagal membuka PDF</string>
+    <string name="error_pdf_invalid">File PDF tidak valid</string>
+    <string name="error_export">Gagal menyimpan PDF</string>
+    <string name="share_via">Bagikan PDF via</string>
+</resources>
