@@ -20,6 +20,13 @@
         android:text="@string/draw_on_screen" />
 
     <Button
+        android:id="@+id/btn_use_saved"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/use_saved_signature" />
+
+    <Button
         android:id="@+id/btn_import_image"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

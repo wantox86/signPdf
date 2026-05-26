@@ -8,7 +8,9 @@
     <string name="clear">Hapus</string>
     <string name="confirm">Konfirmasi</string>
     <string name="draw_on_screen">Gambar di Layar</string>
+    <string name="use_saved_signature">Gunakan Tersimpan</string>
     <string name="import_image">Import Gambar</string>
+    <string name="no_saved_signature">Belum ada tanda tangan tersimpan</string>
     <string name="error_pdf_load">Gagal membuka PDF</string>
     <string name="error_pdf_invalid">File PDF tidak valid</string>
     <string name="error_export">Gagal menyimpan PDF</string>

@@ -16,21 +16,33 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class SignatureViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = SignatureRepository()
+    private val repository = SignatureRepository(application.applicationContext)
 
     val ttdBitmap: StateFlow<Bitmap?> = repository.ttdBitmap
     val parafBitmap: StateFlow<Bitmap?> = repository.parafBitmap
 
+    init {
+        viewModelScope.launch {
+            repository.restoreSavedBitmaps()
+        }
+    }
+
     fun saveTtd(bitmap: Bitmap) {
-        repository.saveBitmap(OverlayType.TTD, bitmap)
+        viewModelScope.launch {
+            repository.saveBitmap(OverlayType.TTD, bitmap)
+        }
     }
 
     fun saveParaf(bitmap: Bitmap) {
-        repository.saveBitmap(OverlayType.PARAF, bitmap)
+        viewModelScope.launch {
+            repository.saveBitmap(OverlayType.PARAF, bitmap)
+        }
     }
 
     fun savePendingBitmap(bitmap: Bitmap, type: OverlayType) {
-        repository.saveBitmap(type, bitmap)
+        viewModelScope.launch {
+            repository.saveBitmap(type, bitmap)
+        }
     }
 
     fun importFromUri(uri: Uri, type: OverlayType) {
@@ -45,7 +57,9 @@ class SignatureViewModel(application: Application) : AndroidViewModel(applicatio
                 val result = loader.execute(request).drawable
                 (result as? BitmapDrawable)?.bitmap
             }
-            loaded?.let { repository.saveBitmap(type, it.copy(Bitmap.Config.ARGB_8888, true)) }
+            loaded?.let {
+                repository.saveBitmap(type, it.copy(Bitmap.Config.ARGB_8888, true))
+            }
         }
     }
 }

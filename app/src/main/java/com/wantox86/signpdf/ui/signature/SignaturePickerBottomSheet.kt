@@ -28,8 +28,10 @@ class SignaturePickerBottomSheet : BottomSheetDialogFragment() {
 
         val typeName = requireArguments().getString(ARG_OVERLAY_TYPE) ?: OverlayType.TTD.name
         val overlayType = OverlayType.valueOf(typeName)
+        val hasSavedSignature = requireArguments().getBoolean(ARG_HAS_SAVED_SIGNATURE, false)
 
         binding.tvLabelType.text = overlayType.name
+        binding.btnUseSaved.visibility = if (hasSavedSignature) View.VISIBLE else View.GONE
 
         binding.btnDrawOnScreen.setOnClickListener {
             parentFragmentManager.setFragmentResult(
@@ -46,6 +48,14 @@ class SignaturePickerBottomSheet : BottomSheetDialogFragment() {
             )
             dismiss()
         }
+
+        binding.btnUseSaved.setOnClickListener {
+            parentFragmentManager.setFragmentResult(
+                RESULT_KEY,
+                bundleOf("action" to "saved", "type" to overlayType.name)
+            )
+            dismiss()
+        }
     }
 
     override fun onDestroyView() {
@@ -56,10 +66,17 @@ class SignaturePickerBottomSheet : BottomSheetDialogFragment() {
     companion object {
         const val RESULT_KEY = "signature_picker"
         private const val ARG_OVERLAY_TYPE = "overlayType"
+        private const val ARG_HAS_SAVED_SIGNATURE = "hasSavedSignature"
 
-        fun newInstance(overlayType: OverlayType): SignaturePickerBottomSheet {
+        fun newInstance(
+            overlayType: OverlayType,
+            hasSavedSignature: Boolean
+        ): SignaturePickerBottomSheet {
             return SignaturePickerBottomSheet().apply {
-                arguments = bundleOf(ARG_OVERLAY_TYPE to overlayType.name)
+                arguments = bundleOf(
+                    ARG_OVERLAY_TYPE to overlayType.name,
+                    ARG_HAS_SAVED_SIGNATURE to hasSavedSignature
+                )
             }
         }
     }

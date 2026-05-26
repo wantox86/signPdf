@@ -74,12 +74,18 @@ class PdfEditorFragment : Fragment() {
         }
 
         binding.fabAddTtd.setOnClickListener {
-            SignaturePickerBottomSheet.newInstance(OverlayType.TTD)
+            SignaturePickerBottomSheet.newInstance(
+                overlayType = OverlayType.TTD,
+                hasSavedSignature = signatureViewModel.ttdBitmap.value != null
+            )
                 .show(parentFragmentManager, "signature_picker_ttd")
         }
 
         binding.fabAddParaf.setOnClickListener {
-            SignaturePickerBottomSheet.newInstance(OverlayType.PARAF)
+            SignaturePickerBottomSheet.newInstance(
+                overlayType = OverlayType.PARAF,
+                hasSavedSignature = signatureViewModel.parafBitmap.value != null
+            )
                 .show(parentFragmentManager, "signature_picker_paraf")
         }
 
@@ -124,6 +130,22 @@ class PdfEditorFragment : Fragment() {
                     }
                     pendingImportType = overlayType
                     importImageLauncher.launch("image/*")
+                }
+
+                "saved" -> {
+                    val savedBitmap = when (overlayType) {
+                        OverlayType.TTD -> signatureViewModel.ttdBitmap.value
+                        OverlayType.PARAF -> signatureViewModel.parafBitmap.value
+                    }
+                    if (savedBitmap != null) {
+                        viewModel.addOverlay(overlayType, savedBitmap, currentPageIndex())
+                    } else {
+                        Snackbar.make(
+                            binding.root,
+                            getString(com.wantox86.signpdf.R.string.no_saved_signature),
+                            Snackbar.LENGTH_SHORT
+                        ).show()
+                    }
                 }
             }
         }
