@@ -151,7 +151,7 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
                 pdfDocument = updatedDocument
                 _exportState.value = ExportState.Success(outputFile)
             } catch (e: Exception) {
-                _exportState.value = ExportState.Error("Gagal menyimpan PDF")
+                _exportState.value = ExportState.Error("Gagal menyimpan PDF: ${e.message ?: e.javaClass.simpleName}")
             }
         }
     }

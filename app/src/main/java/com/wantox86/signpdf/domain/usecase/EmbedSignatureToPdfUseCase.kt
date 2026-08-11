@@ -6,6 +6,7 @@ import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
 import com.tom_roush.pdfbox.pdmodel.graphics.image.LosslessFactory
 import com.wantox86.signpdf.domain.model.PdfDocument
 import com.wantox86.signpdf.domain.model.SignatureOverlay
+import com.wantox86.signpdf.domain.util.PdfCoordinateConverter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -22,9 +23,11 @@ class EmbedSignatureToPdfUseCase(private val context: Context) {
 
             overlays.groupBy { it.pageIndex }.forEach { (pageIndex, pageOverlays) ->
                 val page = pdfDoc.getPage(pageIndex)
-                val scaleX = page.mediaBox.width / renderedWidth
-                val renderedHeight = renderedWidth * (page.mediaBox.height / page.mediaBox.width)
-                val scaleY = page.mediaBox.height / renderedHeight
+                val scale = PdfCoordinateConverter.computeScale(
+                    pageWidthPt = page.mediaBox.width,
+                    pageHeightPt = page.mediaBox.height,
+                    renderedWidthPx = renderedWidth
+                )
 
                 val contentStream = PDPageContentStream(
                     pdfDoc,
@@ -36,14 +39,19 @@ class EmbedSignatureToPdfUseCase(private val context: Context) {
 
                 pageOverlays.forEach { overlay ->
                     val pdImage = LosslessFactory.createFromImage(pdfDoc, overlay.bitmap)
-                    val pdfX = overlay.x * scaleX
-                    val pdfY = page.mediaBox.height - (overlay.y * scaleY) - (overlay.height * scaleY)
+                    val pdfX = PdfCoordinateConverter.toPdfX(overlay.x, scale.scaleX)
+                    val pdfY = PdfCoordinateConverter.toPdfY(
+                        pageHeightPt = page.mediaBox.height,
+                        overlayYPx = overlay.y,
+                        overlayHeightPx = overlay.height,
+                        scaleY = scale.scaleY
+                    )
                     contentStream.drawImage(
                         pdImage,
                         pdfX,
                         pdfY,
-                        overlay.width * scaleX,
-                        overlay.height * scaleY
+                        overlay.width * scale.scaleX,
+                        overlay.height * scale.scaleY
                     )
                 }
 

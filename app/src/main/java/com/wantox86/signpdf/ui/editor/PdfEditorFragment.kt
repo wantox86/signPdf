@@ -160,6 +160,12 @@ class PdfEditorFragment : Fragment() {
         }
 
         lifecycleScope.launchWhenStarted {
+            viewModel.isLoadingPages.collectLatest { loading ->
+                binding.progressLoadingPages.visibility = if (loading) View.VISIBLE else View.GONE
+            }
+        }
+
+        lifecycleScope.launchWhenStarted {
             viewModel.overlays.collectLatest { overlays ->
                 allOverlays = overlays
                 renderCurrentPageOverlays()
