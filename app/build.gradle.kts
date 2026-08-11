@@ -1,8 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.hilt)
-    alias(libs.plugins.kotlin.kapt)
 }
 
 android {
@@ -58,8 +56,6 @@ dependencies {
     implementation(libs.coil)
     implementation(libs.pdfbox.android)
     implementation(libs.signature.pad)
-    implementation(libs.hilt.android)
-    kapt(libs.hilt.compiler)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
