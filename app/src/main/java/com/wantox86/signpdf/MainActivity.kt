@@ -1,6 +1,7 @@
 package com.wantox86.signpdf
 
 import android.Manifest
+import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -24,6 +25,16 @@ class MainActivity : AppCompatActivity() {
         navController = findNavController(R.id.nav_host_fragment)
         requestInitialPermissionsIfNeeded()
         handleIncomingIntent(intent)
+        showLastCrashIfAny()
+    }
+
+    private fun showLastCrashIfAny() {
+        val crashLog = CrashHandler.consumeLastCrash(this) ?: return
+        AlertDialog.Builder(this)
+            .setTitle("Aplikasi sempat crash")
+            .setMessage(crashLog)
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     override fun onNewIntent(intent: Intent?) {
