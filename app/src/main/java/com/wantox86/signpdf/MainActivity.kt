@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
         val scrollView = ScrollView(this).apply { addView(textView) }
 
         AlertDialog.Builder(this)
-            .setTitle("Aplikasi sempat crash")
+            .setTitle(getString(R.string.crash_dialog_title))
             .setView(scrollView)
             .setPositiveButton("OK", null)
             .show()

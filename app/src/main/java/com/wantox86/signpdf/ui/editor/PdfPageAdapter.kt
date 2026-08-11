@@ -9,12 +9,26 @@ import com.wantox86.signpdf.databinding.ItemPdfPageBinding
 
 class PdfPageAdapter : RecyclerView.Adapter<PdfPageAdapter.PdfPageViewHolder>() {
     private val pages = mutableListOf<Bitmap?>()
-    var onPageVisible: (Int) -> Unit = {}
 
     fun setPages(newPages: List<Bitmap?>) {
-        pages.clear()
-        pages.addAll(newPages)
-        notifyDataSetChanged()
+        // Cuma page count berubah (praktisnya sekali doang, pas load awal) yang butuh
+        // notifyDataSetChanged() penuh. Update rutin sesudahnya (page dirender/di-unload)
+        // notifyItemChanged() per index yang beneran ganti aja, biar nggak rebind/redraw
+        // semua item yang lagi kelihatan tiap kali cuma 1 halaman yang berubah -- itu
+        // penyebab kedip-kedip layar.
+        if (pages.size != newPages.size) {
+            pages.clear()
+            pages.addAll(newPages)
+            notifyDataSetChanged()
+            return
+        }
+
+        for (index in newPages.indices) {
+            if (pages[index] !== newPages[index]) {
+                pages[index] = newPages[index]
+                notifyItemChanged(index)
+            }
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PdfPageViewHolder {
@@ -23,7 +37,6 @@ class PdfPageAdapter : RecyclerView.Adapter<PdfPageAdapter.PdfPageViewHolder>() 
     }
 
     override fun onBindViewHolder(holder: PdfPageViewHolder, position: Int) {
-        onPageVisible(position)
         holder.bind(pages[position])
     }
 

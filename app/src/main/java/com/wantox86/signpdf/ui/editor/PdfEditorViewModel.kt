@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.wantox86.signpdf.R
 import com.wantox86.signpdf.data.PdfRepository
 import com.wantox86.signpdf.domain.model.OverlayType
 import com.wantox86.signpdf.domain.model.PdfDocument
@@ -50,13 +51,13 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 val uri = Uri.parse(uriString)
                 val inputStream = context.contentResolver.openInputStream(uri)
-                    ?: throw IllegalArgumentException("Gagal membuka PDF")
+                    ?: throw IllegalArgumentException(context.getString(R.string.error_pdf_load))
                 val pdfDoc = PDDocument.load(inputStream)
                 val pageCount = pdfDoc.numberOfPages
                 pdfDoc.close()
 
                 if (pageCount <= 0) {
-                    _loadError.value = "File PDF tidak valid"
+                    _loadError.value = context.getString(R.string.error_pdf_invalid)
                     return@launch
                 }
 
@@ -66,7 +67,7 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
                 _isLoadingPages.value = true
                 updateVisiblePage(0)
             } catch (e: Exception) {
-                _loadError.value = e.message ?: "Gagal membuka PDF"
+                _loadError.value = e.message ?: context.getString(R.string.error_pdf_load)
             }
         }
     }
@@ -79,10 +80,12 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
 
             val start = (currentIndex - 1).coerceAtLeast(0)
             val end = (currentIndex + 1).coerceAtMost(mutablePages.lastIndex)
+            var changed = false
 
             for (index in start..end) {
                 if (mutablePages[index] == null) {
                     mutablePages[index] = pdfRepository.renderPage(document, index)
+                    changed = true
                 }
             }
 
@@ -95,11 +98,20 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
                     // pas bitmap-nya udah kepanggil recycle(). Cukup drop referensinya, biarin GC
                     // yang bebasin memorinya begitu beneran nggak ada View yang megang lagi.
                     mutablePages[index] = null
+                    changed = true
                 }
             }
 
-            _pages.value = mutablePages
-            _isLoadingPages.value = mutablePages.any { it == null }
+            // Cuma emit kalau beneran ada yang berubah -- tiap emit di sini nyampe ke adapter
+            // dan bisa mancing rebind, jadi emit yang nggak perlu (mis. dipanggil ulang buat
+            // index yang udah fully-loaded) bikin kerja dua kali sia-sia.
+            if (changed) {
+                _pages.value = mutablePages
+            }
+            // Loading indicator cuma refleksiin window yang lagi dibutuhin (start..end), bukan
+            // seluruh dokumen -- halaman jauh yang sengaja di-unload (null) itu normal, bukan
+            // "masih loading", jadi jangan ikut dihitung di sini.
+            _isLoadingPages.value = (start..end).any { mutablePages[it] == null }
         }
     }
 
@@ -144,8 +156,9 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun export() {
+        val context = getApplication<Application>()
         val document = pdfDocument ?: run {
-            _exportState.value = ExportState.Error("Dokumen PDF belum dimuat")
+            _exportState.value = ExportState.Error(context.getString(R.string.error_document_not_loaded))
             return
         }
 
@@ -156,7 +169,8 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
                 pdfDocument = updatedDocument
                 _exportState.value = ExportState.Success(outputFile)
             } catch (e: Exception) {
-                _exportState.value = ExportState.Error("Gagal menyimpan PDF: ${e.message ?: e.javaClass.simpleName}")
+                val reason = e.message ?: e.javaClass.simpleName
+                _exportState.value = ExportState.Error("${context.getString(R.string.error_export)}: $reason")
             }
         }
     }

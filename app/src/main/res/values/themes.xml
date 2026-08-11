@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.SignPDF" parent="Theme.MaterialComponents.DayNight.NoActionBar" />
+    <!-- Light-only (bukan DayNight): dokumen PDF selalu putih/hitam kayak kertas asli,
+         ngikutin dark mode sistem bikin area transparan di render PDF jadi hitam dan teks
+         ketutupan. -->
+    <style name="Theme.SignPDF" parent="Theme.MaterialComponents.Light.NoActionBar" />
 </resources>

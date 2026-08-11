@@ -3,6 +3,7 @@ package com.wantox86.signpdf.ui.share
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
+import com.wantox86.signpdf.R
 import java.io.File
 
 object ShareHelper {
@@ -17,6 +18,6 @@ object ShareHelper {
             putExtra(Intent.EXTRA_STREAM, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        context.startActivity(Intent.createChooser(intent, "Bagikan PDF via"))
+        context.startActivity(Intent.createChooser(intent, context.getString(R.string.share_via)))
     }
 }

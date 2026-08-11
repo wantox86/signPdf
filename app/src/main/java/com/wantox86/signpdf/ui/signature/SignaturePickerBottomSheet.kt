@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.os.bundleOf
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.wantox86.signpdf.R
 import com.wantox86.signpdf.databinding.BottomsheetSignaturePickerBinding
 import com.wantox86.signpdf.domain.model.OverlayType
 
@@ -30,7 +31,12 @@ class SignaturePickerBottomSheet : BottomSheetDialogFragment() {
         val overlayType = OverlayType.valueOf(typeName)
         val hasSavedSignature = requireArguments().getBoolean(ARG_HAS_SAVED_SIGNATURE, false)
 
-        binding.tvLabelType.text = overlayType.name
+        binding.tvLabelType.text = getString(
+            when (overlayType) {
+                OverlayType.TTD -> R.string.overlay_type_ttd
+                OverlayType.PARAF -> R.string.overlay_type_paraf
+            }
+        )
         binding.btnUseSaved.visibility = if (hasSavedSignature) View.VISIBLE else View.GONE
 
         binding.btnDrawOnScreen.setOnClickListener {

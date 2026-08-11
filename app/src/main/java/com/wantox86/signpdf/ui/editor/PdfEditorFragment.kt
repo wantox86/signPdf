@@ -34,6 +34,7 @@ class PdfEditorFragment : Fragment() {
     private var awaitingPreviousBitmapRef: Any? = null
     private var allOverlays: List<SignatureOverlay> = emptyList()
     private var progressDialog: AlertDialog? = null
+    private var lastVisiblePageIndex: Int = -1
 
     private val importImageLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
@@ -51,9 +52,6 @@ class PdfEditorFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.recyclerPdfPages.adapter = adapter
-        adapter.onPageVisible = { pageIndex ->
-            viewModel.updateVisiblePage(pageIndex)
-        }
 
         binding.signatureOverlayView.onOverlaysChanged = { visiblePageOverlays ->
             val pageIndex = currentPageIndex()
@@ -66,7 +64,7 @@ class PdfEditorFragment : Fragment() {
             binding.recyclerPdfPages.addOnScrollListener(object : androidx.recyclerview.widget.RecyclerView.OnScrollListener() {
                 override fun onScrolled(recyclerView: androidx.recyclerview.widget.RecyclerView, dx: Int, dy: Int) {
                     super.onScrolled(recyclerView, dx, dy)
-                    viewModel.updateVisiblePage(currentPageIndex())
+                    notifyVisiblePageChanged()
                     renderCurrentPageOverlays()
                 }
             })
@@ -251,6 +249,16 @@ class PdfEditorFragment : Fragment() {
         val layoutManager = binding.recyclerPdfPages.layoutManager as? LinearLayoutManager
         val index = layoutManager?.findFirstVisibleItemPosition() ?: 0
         return if (index < 0) 0 else index
+    }
+
+    // Cuma panggil updateVisiblePage() pas index-nya beneran ganti -- onScrolled bisa fire
+    // berkali-kali buat scroll kecil yang nggak mindahin currentPageIndex() sama sekali, dan
+    // manggil ulang tanpa guard ini nambah kerjaan coroutine yang nggak perlu tiap event scroll.
+    private fun notifyVisiblePageChanged() {
+        val index = currentPageIndex()
+        if (index == lastVisiblePageIndex) return
+        lastVisiblePageIndex = index
+        viewModel.updateVisiblePage(index)
     }
 
     private fun renderCurrentPageOverlays() {

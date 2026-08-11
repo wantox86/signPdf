@@ -1,22 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">SignPDF</string>
-    <string name="open_pdf">Buka PDF</string>
-    <string name="add_ttd">Tambah TTD</string>
-    <string name="add_paraf">Tambah Paraf</string>
-    <string name="save_and_share">Preview &amp; Bagikan</string>
-    <string name="share">Bagikan</string>
-    <string name="back_to_editor">Kembali ke Editor</string>
-    <string name="error_preview_load">Gagal memuat preview PDF</string>
-    <string name="preview_title">Preview Hasil</string>
-    <string name="clear">Hapus</string>
-    <string name="confirm">Konfirmasi</string>
-    <string name="draw_on_screen">Gambar di Layar</string>
-    <string name="use_saved_signature">Gunakan Tersimpan</string>
-    <string name="import_image">Import Gambar</string>
-    <string name="no_saved_signature">Belum ada tanda tangan tersimpan</string>
-    <string name="error_pdf_load">Gagal membuka PDF</string>
-    <string name="error_pdf_invalid">File PDF tidak valid</string>
-    <string name="error_export">Gagal menyimpan PDF</string>
-    <string name="share_via">Bagikan PDF via</string>
+    <string name="open_pdf">Open PDF</string>
+    <string name="add_ttd">Add Sign</string>
+    <string name="add_paraf">Add Initial</string>
+    <string name="overlay_type_ttd">Sign</string>
+    <string name="overlay_type_paraf">Initial</string>
+    <string name="save_and_share">Preview &amp; Share</string>
+    <string name="share">Share</string>
+    <string name="back_to_editor">Back to Editor</string>
+    <string name="error_preview_load">Failed to load PDF preview</string>
+    <string name="preview_title">Preview</string>
+    <string name="clear">Clear</string>
+    <string name="confirm">Confirm</string>
+    <string name="draw_on_screen">Draw on Screen</string>
+    <string name="use_saved_signature">Use Saved</string>
+    <string name="import_image">Import Image</string>
+    <string name="no_saved_signature">No saved signature yet</string>
+    <string name="error_pdf_load">Failed to open PDF</string>
+    <string name="error_pdf_invalid">Invalid PDF file</string>
+    <string name="error_export">Failed to save PDF</string>
+    <string name="error_document_not_loaded">PDF document not loaded yet</string>
+    <string name="error_preview_file_not_found">Signed PDF file not found</string>
+    <string name="share_via">Share PDF via</string>
+    <string name="crash_dialog_title">App crashed last time</string>
 </resources>
