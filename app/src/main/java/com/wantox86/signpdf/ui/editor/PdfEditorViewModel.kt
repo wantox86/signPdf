@@ -88,7 +88,12 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
 
             for (index in mutablePages.indices) {
                 if (abs(index - currentIndex) > 2 && mutablePages[index] != null) {
-                    mutablePages[index]?.recycle()
+                    // Jangan recycle() manual: nggak ada jaminan ImageView yang lagi nampilin
+                    // bitmap ini udah selesai di-unbind/redraw duluan (adapter update dari
+                    // _pages.value baru diproses RecyclerView belakangan, async), jadi bisa race
+                    // -> "Canvas: trying to use a recycled bitmap" kalau sempat digambar ulang
+                    // pas bitmap-nya udah kepanggil recycle(). Cukup drop referensinya, biarin GC
+                    // yang bebasin memorinya begitu beneran nggak ada View yang megang lagi.
                     mutablePages[index] = null
                 }
             }
