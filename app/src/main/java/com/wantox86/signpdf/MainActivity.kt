@@ -6,6 +6,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.widget.ScrollView
+import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -30,9 +32,20 @@ class MainActivity : AppCompatActivity() {
 
     private fun showLastCrashIfAny() {
         val crashLog = CrashHandler.consumeLastCrash(this) ?: return
+        val padding = (16 * resources.displayMetrics.density).toInt()
+        // TextView selectable (bukan setMessage() biasa) biar teksnya bisa di-long-press,
+        // di-select, dan di-copy -- setMessage() render pesan dialog sebagai teks statis.
+        val textView = TextView(this).apply {
+            text = crashLog
+            setPadding(padding, padding, padding, padding)
+            setTextIsSelectable(true)
+            textSize = 12f
+        }
+        val scrollView = ScrollView(this).apply { addView(textView) }
+
         AlertDialog.Builder(this)
             .setTitle("Aplikasi sempat crash")
-            .setMessage(crashLog)
+            .setView(scrollView)
             .setPositiveButton("OK", null)
             .show()
     }

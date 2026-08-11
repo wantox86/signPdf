@@ -154,7 +154,15 @@ class PdfEditorFragment : Fragment() {
 
         lifecycleScope.launchWhenStarted {
             viewModel.pages.collectLatest { pages ->
-                adapter.setPages(pages)
+                // adapter.onPageVisible dipanggil dari dalam onBindViewHolder, yang bisa memicu
+                // update pages ini secara synchronous selagi RecyclerView masih di tengah layout
+                // pass (viewModelScope pakai Dispatchers.Main.immediate). notifyDataSetChanged()
+                // langsung di titik itu bikin IllegalStateException "Cannot call this method
+                // while RecyclerView is computing a layout or scrolling" -- post() biar nunggu
+                // layout pass yang lagi jalan kelar dulu.
+                binding.recyclerPdfPages.post {
+                    if (_binding != null) adapter.setPages(pages)
+                }
             }
         }
 
