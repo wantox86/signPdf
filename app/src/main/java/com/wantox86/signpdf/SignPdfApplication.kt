@@ -1,7 +1,7 @@
 package com.wantox86.signpdf
 
 import android.app.Application
-import com.tom_roush.pdfbox.util.PDFBoxResourceLoader
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 
 class SignPdfApplication : Application() {
     override fun onCreate() {
