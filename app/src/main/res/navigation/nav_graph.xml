@@ -22,6 +22,19 @@
         <argument
             android:name="pdfUri"
             app:argType="string" />
+        <action
+            android:id="@+id/action_pdfEditorFragment_to_pdfPreviewFragment"
+            app:destination="@id/pdfPreviewFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/pdfPreviewFragment"
+        android:name="com.wantox86.signpdf.ui.preview.PdfPreviewFragment"
+        android:label="@string/preview_title"
+        tools:layout="@layout/fragment_pdf_preview">
+        <argument
+            android:name="filePath"
+            app:argType="string" />
     </fragment>
 
     <fragment

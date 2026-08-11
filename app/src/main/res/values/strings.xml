@@ -4,7 +4,11 @@
     <string name="open_pdf">Buka PDF</string>
     <string name="add_ttd">Tambah TTD</string>
     <string name="add_paraf">Tambah Paraf</string>
-    <string name="save_and_share">Simpan &amp; Share</string>
+    <string name="save_and_share">Preview &amp; Bagikan</string>
+    <string name="share">Bagikan</string>
+    <string name="back_to_editor">Kembali ke Editor</string>
+    <string name="error_preview_load">Gagal memuat preview PDF</string>
+    <string name="preview_title">Preview Hasil</string>
     <string name="clear">Hapus</string>
     <string name="confirm">Konfirmasi</string>
     <string name="draw_on_screen">Gambar di Layar</string>

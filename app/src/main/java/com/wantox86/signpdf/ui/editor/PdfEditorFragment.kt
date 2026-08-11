@@ -19,7 +19,6 @@ import com.google.android.material.snackbar.Snackbar
 import com.wantox86.signpdf.databinding.FragmentPdfEditorBinding
 import com.wantox86.signpdf.domain.model.OverlayType
 import com.wantox86.signpdf.domain.model.SignatureOverlay
-import com.wantox86.signpdf.ui.share.ShareHelper
 import com.wantox86.signpdf.ui.signature.SignaturePickerBottomSheet
 import com.wantox86.signpdf.ui.signature.SignatureViewModel
 import kotlinx.coroutines.flow.collectLatest
@@ -90,7 +89,7 @@ class PdfEditorFragment : Fragment() {
         }
 
         binding.btnSaveAndShare.setOnClickListener {
-            viewModel.exportAndShare()
+            viewModel.export()
         }
 
         binding.btnUndo.setOnClickListener {
@@ -207,7 +206,10 @@ class PdfEditorFragment : Fragment() {
                     is ExportState.Loading -> showProgress()
                     is ExportState.Success -> {
                         hideProgress()
-                        ShareHelper.sharePdf(requireContext(), state.file)
+                        findNavController().navigate(
+                            com.wantox86.signpdf.R.id.action_pdfEditorFragment_to_pdfPreviewFragment,
+                            bundleOf("filePath" to state.file.absolutePath)
+                        )
                         viewModel.resetExportState()
                     }
 

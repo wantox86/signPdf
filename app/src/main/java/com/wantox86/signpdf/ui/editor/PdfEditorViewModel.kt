@@ -138,7 +138,7 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
         _overlays.value = redoStack.removeLast()
     }
 
-    fun exportAndShare() {
+    fun export() {
         val document = pdfDocument ?: run {
             _exportState.value = ExportState.Error("Dokumen PDF belum dimuat")
             return
