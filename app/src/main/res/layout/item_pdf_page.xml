@@ -25,7 +25,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Constraint langsung ke 4 sisi img_pdf_page (bukan match_parent ke root) -- root ini
+    <!-- Constraint langsung ke 4 sisi img_pdf_page (bukan match_parent ke root): root ini
          wrap_content dan RecyclerView item biasa diukur UNSPECIFIED, kombinasi itu bikin child
          match_parent bisa collapse jadi 0x0. ConstraintLayout resolve ukuran overlay ini persis
          nyamain ImageView-nya, nggak peduli ambiguitas measurement di atas. -->
