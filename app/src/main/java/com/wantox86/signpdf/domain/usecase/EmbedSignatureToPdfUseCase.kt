@@ -124,7 +124,11 @@ class EmbedSignatureToPdfUseCase(private val context: Context) {
                 contentStream.close()
             }
 
-            val outputFile = File(context.filesDir, "signed_${document.fileName}")
+            // Nama file asli + "_signed" (bukan "signed_" di depan) sesuai request, dan
+            // dipastiin ekstensi .pdf-nya bener (document.fileName sekarang udah dijamin
+            // punya ekstensi .pdf beneran dari resolveDisplayName di PdfEditorViewModel).
+            val baseName = document.fileName.removeSuffix(".pdf").removeSuffix(".PDF")
+            val outputFile = File(context.filesDir, "${baseName}_signed.pdf")
             pdfDoc.save(outputFile)
             pdfDoc.close()
             log.appendLine("Saved to: ${outputFile.absolutePath} (${outputFile.length()} bytes)")

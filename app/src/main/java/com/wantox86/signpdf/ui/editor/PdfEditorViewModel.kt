@@ -1,8 +1,10 @@
 package com.wantox86.signpdf.ui.editor
 
 import android.app.Application
+import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.tom_roush.pdfbox.pdmodel.PDDocument
@@ -65,7 +67,7 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
                     return@launch
                 }
 
-                val fileName = uri.lastPathSegment ?: "document.pdf"
+                val fileName = resolveDisplayName(context, uri)
                 pdfDocument = PdfDocument(uri, fileName, pageCount)
                 _pages.value = List(pageCount) { null }
                 renderAllPages()
@@ -73,6 +75,23 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
                 _loadError.value = e.message ?: context.getString(R.string.error_pdf_load)
             }
         }
+    }
+
+    // uri.lastPathSegment buat content:// URI dari file picker (SAF) itu document ID internal
+    // provider (mis. "document:1000115680"), BUKAN nama file asli -- nggak ada ekstensi yang
+    // bener, jadi begitu di-share app lain (WhatsApp/Telegram) nebak jadi .bin. Query beneran ke
+    // ContentResolver (OpenableColumns.DISPLAY_NAME) itu cara yang benar buat dapetin nama file
+    // asli + ekstensinya.
+    private fun resolveDisplayName(context: Context, uri: Uri): String {
+        val queried = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+            ?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (index >= 0) cursor.getString(index) else null
+                } else null
+            }
+        val name = queried ?: uri.lastPathSegment ?: "document.pdf"
+        return if (name.endsWith(".pdf", ignoreCase = true)) name else "$name.pdf"
     }
 
     // Render semua halaman upfront pas dokumen dibuka, bukan lazy/windowed pas discroll --
