@@ -67,11 +67,11 @@ app/src/main/java/com/wantox86/signpdf/
 - **All pages are rendered eagerly** rather than lazily on scroll. Documents being signed are typically only a few pages long, so the additional upfront memory cost is an acceptable trade-off for scrolling that never shows a rendering gap.
 - **Overlay coordinates** (`SignatureOverlay.x/y/width/height`) are always expressed in the page bitmap's own pixel space (not screen pixels), and are converted to PDF units (points, bottom-left origin) via `PdfCoordinateConverter` at embed time.
 - **No dependency-injection framework is used.** Hilt was set up initially but later removed, as no ViewModel ever actually used `@Inject` — every dependency is constructed manually in its constructor. This is sufficient for an application of this size.
+- **Pinch-to-zoom is a pure visual transform, decoupled from overlay data.** `ZoomableContainer` wraps the page `RecyclerView` and applies `scaleX/scaleY`/`translationX/translationY` to it as a whole (one zoom level for the entire document, not per page). It never touches `SignatureOverlay` coordinates, and correctly defers to an in-progress overlay drag via Android's standard `requestDisallowInterceptTouchEvent` mechanism — no changes were needed in `SignatureOverlayView` to support this.
 - **Flow collection in Fragments uses `viewLifecycleOwner.lifecycleScope` with `repeatOnLifecycle`**, not the deprecated `lifecycleScope.launchWhenStarted`. A Fragment's own `lifecycleScope` survives view recreation (e.g. returning via the back stack), so `launchWhenStarted` blocks never get cancelled and collectors accumulate — this previously caused a duplicate-navigation crash. Follow the existing pattern in `PdfEditorFragment`/`PdfPreviewFragment`/`HomeFragment` when adding new collectors.
 
 ## Known Limitations
 
-- No pinch-to-zoom on PDF pages (fit-width only).
 - Not tested on tablets, large screens, or landscape device orientation.
 - No instrumented (`androidTest`) tests exist yet — only a unit test for `PdfCoordinateConverter`.
 

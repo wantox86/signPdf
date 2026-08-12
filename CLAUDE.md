@@ -61,7 +61,8 @@ app/src/main/java/com/wantox86/signpdf/
     │   ├── PdfEditorFragment.kt      # main screen: PDF viewer + Sign/Initial overlays
     │   ├── PdfEditorViewModel.kt
     │   ├── PdfPageAdapter.kt         # RecyclerView adapter; overlays are rendered per page (see below)
-    │   └── SignatureOverlayView.kt   # custom drag/resize View, now instantiated per page (not globally)
+    │   ├── SignatureOverlayView.kt   # custom drag/resize View, now instantiated per page (not globally)
+    │   └── ZoomableContainer.kt      # pinch-to-zoom + pan wrapper around the page RecyclerView
     ├── signature/                # SignatureCanvasFragment, SignaturePickerBottomSheet, SignatureViewModel
     ├── preview/                  # PdfPreviewFragment + PdfPreviewViewModel — review before sharing
     └── share/
@@ -123,6 +124,14 @@ A push to `main` or `release/**` triggers `.github/workflows/build-android.yml` 
 
 `CrashHandler.install()` (invoked from `SignPdfApplication.onCreate()`) installs a global `Thread.setDefaultUncaughtExceptionHandler` — it writes the last crash's stack trace to a local file, which is shown as a copyable dialog (`TextView.setTextIsSelectable(true)` inside a `ScrollView`) the next time `MainActivity` launches. This is useful for debugging on a device without `adb`/logcat access.
 
+### 7. Pinch-to-zoom is a pure visual transform
+
+`ZoomableContainer` (`ui/editor/ZoomableContainer.kt`) wraps the page `RecyclerView` in `fragment_pdf_editor.xml` and applies pinch-to-zoom (plus pan while zoomed, and double-tap to reset) as `scaleX`/`scaleY`/`translationX`/`translationY` on the RecyclerView as a whole — one zoom level for the entire document, not per page. It deliberately never touches `SignatureOverlay` coordinates or `SignatureOverlayView` at all: zoom is purely a rendering-level transform, and Android automatically un-transforms touch coordinates delivered to a scaled child, so overlay drag/resize math is completely unaffected regardless of zoom level.
+
+Disambiguation between a page-zoom gesture and an overlay drag/resize relies entirely on the standard `requestDisallowInterceptTouchEvent` mechanism that `SignatureOverlayView` already calls when it captures a touch on a selected overlay (see decision #1) — once called, Android will not invoke `onInterceptTouchEvent()` on any ancestor (including `ZoomableContainer`) for the rest of that gesture, so a second finger touching down mid-drag is guaranteed to reach the overlay's own `ScaleGestureDetector` (for resize) rather than triggering page zoom. No changes were needed in `SignatureOverlayView` to support this.
+
+Known edge case: if the RecyclerView has already begun consuming a single-finger vertical scroll (which itself calls `requestDisallowInterceptTouchEvent` per standard nested-scrolling behavior) before a second finger touches down, `ZoomableContainer` will not get a chance to intercept for that gesture. This only affects the uncommon case of starting a scroll and only then deciding to pinch; a normal two-finger-pinch-from-the-start gesture is unaffected.
+
 ---
 
 ## Permissions and Manifest
@@ -139,7 +148,7 @@ The exported PDF's file name is resolved via a `ContentResolver` query for the r
 
 ## Known Limitations
 
-- No pinch-to-zoom on PDF pages (fit-width only, `ImageView` with `scaleType="fitCenter"`).
+- Pinch-to-zoom max scale is capped at 3x (`ZoomableContainer.MAX_SCALE`); since pages are always rendered at a fixed `RENDER_WIDTH_PX = 1080`, zooming beyond that reveals no additional detail and would only look pixelated.
 - Not tested on tablets, large screens, or landscape device orientation (testing to date has focused on portrait-mode phones).
 - Only one unit test exists (`PdfCoordinateConverterTest`); no instrumented (`androidTest`) tests have been added.
 

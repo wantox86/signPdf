@@ -34,14 +34,23 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler_pdf_pages"
+        <!-- ZoomableContainer bungkus RecyclerView buat pinch-to-zoom + pan satu level ke semua
+             halaman. Murni transform visual di RecyclerView-nya sendiri -- nggak nyentuh
+             SignatureOverlayView atau koordinat overlay yang tersimpan sama sekali. -->
+        <com.wantox86.signpdf.ui.editor.ZoomableContainer
+            android:id="@+id/zoomable_container"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:padding="8dp"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-            tools:listitem="@layout/item_pdf_page" />
+            android:layout_height="match_parent">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler_pdf_pages"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:padding="8dp"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                tools:listitem="@layout/item_pdf_page" />
+        </com.wantox86.signpdf.ui.editor.ZoomableContainer>
     </FrameLayout>
 
     <ProgressBar

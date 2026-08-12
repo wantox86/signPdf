@@ -78,7 +78,7 @@ app/src/main/java/com/wantox86/signpdf/
 │       └── PdfCoordinateConverter.kt   # pure math, has a unit test
 └── ui/
     ├── home/
-    ├── editor/         # PdfEditorFragment, PdfEditorViewModel, PdfPageAdapter, SignatureOverlayView
+    ├── editor/         # PdfEditorFragment, PdfEditorViewModel, PdfPageAdapter, SignatureOverlayView, ZoomableContainer
     ├── signature/       # SignatureCanvasFragment, SignaturePickerBottomSheet, SignatureViewModel
     ├── preview/         # PdfPreviewFragment, PdfPreviewViewModel
     └── share/           # ShareHelper
@@ -195,7 +195,21 @@ viewLifecycleOwner.lifecycleScope.launch {
 `repeatOnLifecycle` is tied to `viewLifecycleOwner`, so it's cleanly cancelled on every
 `onDestroyView` and restarted fresh on every `onViewCreated`.
 
-### 5. URI handling — always use contentResolver
+### 5. Pinch-to-zoom is a pure visual transform
+
+`ZoomableContainer` wraps the page `RecyclerView` in `fragment_pdf_editor.xml` and applies
+pinch-to-zoom (plus pan while zoomed, double-tap to reset) as `scaleX`/`scaleY`/`translationX`/
+`translationY` on the RecyclerView as a whole — one zoom level for the entire document, not per
+page. It never touches `SignatureOverlay` coordinates or `SignatureOverlayView` at all: Android
+automatically un-transforms touch coordinates delivered to a scaled child, so overlay drag/resize
+math is unaffected by zoom level. Disambiguation from an in-progress overlay drag relies entirely
+on the `requestDisallowInterceptTouchEvent` call `SignatureOverlayView` already makes when it
+captures a touch (see rule 1) — once called, no ancestor's `onInterceptTouchEvent()` fires for the
+rest of that gesture, so a second finger touching down mid-drag reaches the overlay's own
+`ScaleGestureDetector` (resize) rather than triggering page zoom. Max scale is capped at 3x since
+pages are rendered at a fixed `RENDER_WIDTH_PX = 1080` — zooming further reveals no more detail.
+
+### 6. URI handling — always use contentResolver
 
 ```kotlin
 // CORRECT
@@ -244,7 +258,7 @@ real secret.
 
 ## Known Limitations
 
-- No pinch-zoom on PDF pages (fit-width only).
+- Pinch-to-zoom max scale is capped at 3x (see rule 5) — a hard limit tied to the fixed 1080px render width.
 - Not tested on tablets/large screens or landscape device orientation.
 - Only one unit test exists (`PdfCoordinateConverterTest`); no instrumented (`androidTest`) tests.
 
