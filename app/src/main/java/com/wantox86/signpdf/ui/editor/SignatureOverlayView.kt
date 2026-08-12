@@ -153,7 +153,12 @@ class SignatureOverlayView @JvmOverloads constructor(
                     }
                 }
 
-                val touched = overlays.asReversed().firstOrNull { overlayRect(it).contains(touchX, touchY) }
+                // Pake hitTestRect (bukan overlayRect polos) buat nangkep touch pertama --
+                // overlay/paraf kecil punya area gambar yang sempit, kalau hit-test-nya persis
+                // sama batas gambar, jari pertama pinch-to-resize gampang banget meleset dan
+                // gesture-nya nggak ke-capture sama sekali (makanya kerasa kayak "resize nggak
+                // jalan").
+                val touched = overlays.asReversed().firstOrNull { hitTestRect(it).contains(touchX, touchY) }
                 selectedOverlayId = touched?.id
                 lastTouchX = touchX
                 lastTouchY = touchY
@@ -208,6 +213,19 @@ class SignatureOverlayView @JvmOverloads constructor(
             overlay.y,
             overlay.x + overlay.width,
             overlay.y + overlay.height
+        )
+    }
+
+    // Area khusus buat nangkep sentuhan awal (ACTION_DOWN) -- lebih gede dari area gambar
+    // sebenarnya, biar overlay kecil (paraf/initial) tetep gampang di-tap/pinch jarinya.
+    private fun hitTestRect(overlay: SignatureOverlay): RectF {
+        val margin = 40f
+        val rect = overlayRect(overlay)
+        return RectF(
+            rect.left - margin,
+            rect.top - margin,
+            rect.right + margin,
+            rect.bottom + margin
         )
     }
 
