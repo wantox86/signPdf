@@ -54,20 +54,13 @@ class PdfEditorFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         binding.recyclerPdfPages.adapter = adapter
 
-        binding.signatureOverlayView.onOverlaysChanged = { visiblePageOverlays ->
-            val pageIndex = currentPageIndex()
-            val merged = allOverlays
-                .filter { it.pageIndex != pageIndex } + visiblePageOverlays.map { it.copy(pageIndex = pageIndex) }
+        // Overlay sekarang jadi bagian dari tiap item halaman (lihat PdfPageAdapter /
+        // SignatureOverlayView) -- callback ini udah dikasih tau pageIndex halaman yang bener
+        // dari adapter, nggak perlu nebak/remap pakai currentPageIndex() lagi kayak desain lama
+        // (yang jadi sumber bug overlay ke-taruh di halaman salah pas scroll).
+        adapter.onOverlaysChangedForPage = { pageIndex, overlaysForThatPage ->
+            val merged = allOverlays.filter { it.pageIndex != pageIndex } + overlaysForThatPage
             viewModel.updateOverlays(merged)
-        }
-
-        (binding.recyclerPdfPages.layoutManager as? LinearLayoutManager)?.let {
-            binding.recyclerPdfPages.addOnScrollListener(object : androidx.recyclerview.widget.RecyclerView.OnScrollListener() {
-                override fun onScrolled(recyclerView: androidx.recyclerview.widget.RecyclerView, dx: Int, dy: Int) {
-                    super.onScrolled(recyclerView, dx, dy)
-                    renderCurrentPageOverlays()
-                }
-            })
         }
 
         binding.fabAddTtd.setOnClickListener {
@@ -181,7 +174,7 @@ class PdfEditorFragment : Fragment() {
         lifecycleScope.launchWhenStarted {
             viewModel.overlays.collectLatest { overlays ->
                 allOverlays = overlays
-                renderCurrentPageOverlays()
+                adapter.setOverlays(overlays)
             }
         }
 
@@ -227,7 +220,10 @@ class PdfEditorFragment : Fragment() {
                         showExportDiagnostics(state.diagnostics)
                         findNavController().navigate(
                             com.wantox86.signpdf.R.id.action_pdfEditorFragment_to_pdfPreviewFragment,
-                            bundleOf("filePath" to state.file.absolutePath)
+                            bundleOf(
+                                "filePath" to state.file.absolutePath,
+                                "firstSignedPage" to state.firstSignedPage
+                            )
                         )
                         viewModel.resetExportState()
                     }
@@ -262,19 +258,6 @@ class PdfEditorFragment : Fragment() {
         val layoutManager = binding.recyclerPdfPages.layoutManager as? LinearLayoutManager
         val index = layoutManager?.findFirstVisibleItemPosition() ?: 0
         return if (index < 0) 0 else index
-    }
-
-    private fun renderCurrentPageOverlays() {
-        val pageIndex = currentPageIndex()
-        val overlaysForCurrentPage = allOverlays.filter { it.pageIndex == pageIndex }
-
-        val layoutManager = binding.recyclerPdfPages.layoutManager as? LinearLayoutManager
-        val pageView = layoutManager?.findViewByPosition(pageIndex)
-        binding.signatureOverlayView.setPageOffset(
-            offsetX = pageView?.left?.toFloat() ?: 0f,
-            offsetY = pageView?.top?.toFloat() ?: 0f
-        )
-        binding.signatureOverlayView.setOverlays(overlaysForCurrentPage)
     }
 
     private fun showExportDiagnostics(diagnostics: String) {

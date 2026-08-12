@@ -42,11 +42,6 @@
             android:padding="8dp"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
             tools:listitem="@layout/item_pdf_page" />
-
-        <com.wantox86.signpdf.ui.editor.SignatureOverlayView
-            android:id="@+id/signature_overlay_view"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
     </FrameLayout>
 
     <ProgressBar

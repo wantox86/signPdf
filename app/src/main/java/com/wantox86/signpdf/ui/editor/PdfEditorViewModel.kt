@@ -24,7 +24,9 @@ sealed class ExportState {
     // diagnostics: log mentah dari EmbedSignatureToPdfUseCase (config bitmap, hasil
     // PDImageXObject, koordinat final vs batas halaman) -- buat nelusurin laporan "overlay
     // ke-embed tapi nggak kelihatan di preview" langsung dari device asli, tanpa adb/logcat.
-    data class Success(val file: File, val diagnostics: String) : ExportState()
+    // firstSignedPage: halaman pertama yang ada overlay-nya, biar Preview auto-scroll ke situ
+    // (bukan selalu mulai dari halaman 1) kalau TTD-nya ada di halaman bawah.
+    data class Success(val file: File, val diagnostics: String, val firstSignedPage: Int) : ExportState()
     data class Error(val message: String) : ExportState()
 }
 
@@ -152,7 +154,8 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
                 val overlaysToEmbed = _overlays.value
                 val result = exportPdfUseCase.execute(document, overlaysToEmbed)
                 pdfDocument = result.document
-                _exportState.value = ExportState.Success(result.file, result.diagnostics)
+                val firstSignedPage = overlaysToEmbed.minOfOrNull { it.pageIndex } ?: 0
+                _exportState.value = ExportState.Success(result.file, result.diagnostics, firstSignedPage)
             } catch (e: Exception) {
                 val reason = e.message ?: e.javaClass.simpleName
                 _exportState.value = ExportState.Error("${context.getString(R.string.error_export)}: $reason")

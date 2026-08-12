@@ -35,6 +35,10 @@
         <argument
             android:name="filePath"
             app:argType="string" />
+        <argument
+            android:name="firstSignedPage"
+            app:argType="integer"
+            android:defaultValue="0" />
     </fragment>
 
     <fragment

@@ -58,6 +58,13 @@ class PdfPreviewFragment : Fragment() {
                     is PreviewLoadState.Ready -> {
                         binding.progressPreviewLoading.visibility = View.GONE
                         adapter.setPages(state.pages)
+                        // Langsung ke halaman yang ada TTD/paraf-nya -- kalau ditandatangan di
+                        // halaman bawah, jangan biarin preview mulai dari halaman 1 (kesannya
+                        // "kok nggak ada", padahal cuma perlu scroll).
+                        val firstSignedPage = arguments?.getInt("firstSignedPage", 0) ?: 0
+                        if (firstSignedPage in state.pages.indices) {
+                            binding.recyclerPreviewPages.scrollToPosition(firstSignedPage)
+                        }
                     }
 
                     is PreviewLoadState.Error -> {

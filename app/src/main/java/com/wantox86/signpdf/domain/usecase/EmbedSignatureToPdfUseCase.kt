@@ -98,15 +98,27 @@ class EmbedSignatureToPdfUseCase(private val context: Context) {
                     )
                     val drawWidth = overlay.width * scale.scaleX
                     val drawHeight = overlay.height * scale.scaleY
-                    log.appendLine(
-                        "    placed at pdfX=$pdfX pdfY=$pdfY w=$drawWidth h=$drawHeight " +
-                            "(page bounds 0..$displayWidth x 0..$displayHeight)"
-                    )
                     val inBounds = pdfX >= 0 && pdfY >= 0 &&
                         (pdfX + drawWidth) <= displayWidth && (pdfY + drawHeight) <= displayHeight
-                    log.appendLine("    fully in-bounds: $inBounds")
+                    log.appendLine(
+                        "    placed at pdfX=$pdfX pdfY=$pdfY w=$drawWidth h=$drawHeight " +
+                            "(page bounds 0..$displayWidth x 0..$displayHeight) fully in-bounds: $inBounds"
+                    )
 
-                    contentStream.drawImage(pdImage, pdfX, pdfY, drawWidth, drawHeight)
+                    // Safety net terakhir: SignatureOverlayView udah clamp overlay ke batas
+                    // halaman pas drag/resize (lihat fixing-signing.md), tapi kalau toh ada
+                    // celah lain yang lolos, mending gambar tetep kepaksa di dalam kertas
+                    // (clamped) daripada diem-diem ngegambar di luar halaman -- itu yang bikin
+                    // overlay "ke-embed" (count > 0) tapi invisible di preview.
+                    val clampedWidth = drawWidth.coerceAtMost(displayWidth)
+                    val clampedHeight = drawHeight.coerceAtMost(displayHeight)
+                    val clampedX = pdfX.coerceIn(0f, (displayWidth - clampedWidth).coerceAtLeast(0f))
+                    val clampedY = pdfY.coerceIn(0f, (displayHeight - clampedHeight).coerceAtLeast(0f))
+                    if (!inBounds) {
+                        log.appendLine("    CLAMPED to pdfX=$clampedX pdfY=$clampedY w=$clampedWidth h=$clampedHeight")
+                    }
+
+                    contentStream.drawImage(pdImage, clampedX, clampedY, clampedWidth, clampedHeight)
                 }
 
                 contentStream.close()

@@ -13,6 +13,14 @@ import android.view.View
 import com.wantox86.signpdf.domain.model.SignatureOverlay
 import kotlin.math.max
 
+/**
+ * Overlay TTD/paraf buat SATU halaman -- sekarang jadi anak langsung dari item_pdf_page.xml
+ * (bukan lagi satu view fullscreen yang numpuk di atas seluruh RecyclerView). Konsekuensinya:
+ * overlay.x/y/width/height (ruang koordinat bitmap halaman, sama kayak yang dipakai
+ * EmbedSignatureToPdfUseCase buat embed) otomatis "milik" halaman ini doang -- nggak ada lagi
+ * urusan scroll-offset/halaman-mana-yang-first-visible kayak desain lama yang jadi sumber bug
+ * overlay salah tempat/ilang-muncul pas scroll (lihat fixing-signing.md).
+ */
 class SignatureOverlayView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null
@@ -25,21 +33,24 @@ class SignatureOverlayView @JvmOverloads constructor(
     private var lastTouchX = 0f
     private var lastTouchY = 0f
 
-    // overlay.x/y itu koordinat page-local (relatif ke pojok kiri-atas bitmap halaman, dipake
-    // juga sama EmbedSignatureToPdfUseCase pas nge-embed ke PDF asli). View ini sendiri adalah
-    // sibling di atas RecyclerView yang nggak ikut discroll -- tanpa offset ini, begitu halaman
-    // discroll posisi gambar/hit-test overlay nggak nyambung lagi sama posisi asli di halaman,
-    // dan kalau overlay di-drag/di-resize pas lagi discroll, koordinat yang kesimpen ikut korup
-    // (numpang ke-mix sama scroll offset), yang ujungnya bikin overlay ke-embed di posisi salah
-    // (di luar halaman) pas export.
-    private var pageOffsetX = 0f
-    private var pageOffsetY = 0f
+    // Ukuran bitmap halaman yang lagi dibind -- overlay.x/y/width/height selalu dalam ruang
+    // koordinat INI (bitmap-pixel-space), sementara View-nya sendiri dirender di ukuran layar
+    // (dp*density, biasanya beda dari ukuran bitmap asli karena ImageView fitCenter). scale()
+    // di bawah yang jembatanin dua ruang koordinat itu.
+    private var bitmapWidth = 0f
+    private var bitmapHeight = 0f
 
-    fun setPageOffset(offsetX: Float, offsetY: Float) {
-        if (pageOffsetX == offsetX && pageOffsetY == offsetY) return
-        pageOffsetX = offsetX
-        pageOffsetY = offsetY
+    fun setPageBitmapSize(width: Int, height: Int) {
+        bitmapWidth = width.toFloat()
+        bitmapHeight = height.toFloat()
         invalidate()
+    }
+
+    // View (fitCenter, adjustViewBounds) ngikutin aspect ratio bitmap, jadi 1 scale factor
+    // berlaku sama buat X & Y.
+    private fun scale(): Float {
+        if (bitmapWidth <= 0f || width <= 0) return 1f
+        return width.toFloat() / bitmapWidth
     }
 
     private val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -102,8 +113,9 @@ class SignatureOverlayView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
+        val s = scale()
         canvas.save()
-        canvas.translate(pageOffsetX, pageOffsetY)
+        canvas.scale(s, s)
         overlays.forEach { overlay ->
             val dst = RectF(
                 overlay.x,
@@ -133,11 +145,11 @@ class SignatureOverlayView @JvmOverloads constructor(
     override fun onTouchEvent(event: MotionEvent): Boolean {
         scaleDetector.onTouchEvent(event)
 
-        // Semua hit-test/drag di bawah ini kerja di ruang koordinat page-local (sama kayak
-        // overlay.x/y yang tersimpan), jadi konversi dulu dari koordinat layar (event.x/y)
-        // sebelum dipakai -- lihat komentar pageOffsetX/Y di atas.
-        val touchX = event.x - pageOffsetX
-        val touchY = event.y - pageOffsetY
+        // Semua hit-test/drag di bawah ini kerja di ruang koordinat bitmap (sama kayak
+        // overlay.x/y yang tersimpan), jadi konversi dulu dari koordinat layar (event.x/y).
+        val s = scale()
+        val touchX = if (s != 0f) event.x / s else event.x
+        val touchY = if (s != 0f) event.y / s else event.y
 
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
@@ -163,6 +175,10 @@ class SignatureOverlayView @JvmOverloads constructor(
                 lastTouchX = touchX
                 lastTouchY = touchY
                 invalidate()
+                // Overlay ini sekarang hidup di dalam item RecyclerView -- kalau nangkep drag,
+                // cegah parent (RecyclerView) ikut interpretasi gesture yang sama sebagai
+                // scroll, biar nggak "tarik-tarikan" antara drag overlay vs scroll dokumen.
+                if (touched != null) parent?.requestDisallowInterceptTouchEvent(true)
                 return touched != null
             }
 
@@ -187,7 +203,10 @@ class SignatureOverlayView @JvmOverloads constructor(
             }
 
             MotionEvent.ACTION_UP,
-            MotionEvent.ACTION_CANCEL -> return true
+            MotionEvent.ACTION_CANCEL -> {
+                parent?.requestDisallowInterceptTouchEvent(false)
+                return true
+            }
         }
 
         return super.onTouchEvent(event)
@@ -201,10 +220,24 @@ class SignatureOverlayView @JvmOverloads constructor(
     private fun updateOverlay(overlay: SignatureOverlay) {
         val idx = overlays.indexOfFirst { it.id == overlay.id }
         if (idx >= 0) {
-            overlays[idx] = overlay
+            val clamped = clampToPage(overlay)
+            overlays[idx] = clamped
             onOverlaysChanged(overlays.toList())
             invalidate()
         }
+    }
+
+    // Safety net: overlay nggak boleh digambar/tersimpan di luar batas bitmap halaman -- kalau
+    // dibiarin lolos, ujung-ujungnya ke-embed di luar kertas pas export (invisible, lihat
+    // fixing-signing.md). Clamp posisi & ukuran di titik tunggal ini (dipanggil dari drag &
+    // resize) biar nggak ada celah lain.
+    private fun clampToPage(overlay: SignatureOverlay): SignatureOverlay {
+        if (bitmapWidth <= 0f || bitmapHeight <= 0f) return overlay
+        val clampedWidth = overlay.width.coerceIn(1f, bitmapWidth)
+        val clampedHeight = overlay.height.coerceIn(1f, bitmapHeight)
+        val clampedX = overlay.x.coerceIn(0f, (bitmapWidth - clampedWidth).coerceAtLeast(0f))
+        val clampedY = overlay.y.coerceIn(0f, (bitmapHeight - clampedHeight).coerceAtLeast(0f))
+        return overlay.copy(x = clampedX, y = clampedY, width = clampedWidth, height = clampedHeight)
     }
 
     private fun overlayRect(overlay: SignatureOverlay): RectF {
@@ -218,8 +251,11 @@ class SignatureOverlayView @JvmOverloads constructor(
 
     // Area khusus buat nangkep sentuhan awal (ACTION_DOWN) -- lebih gede dari area gambar
     // sebenarnya, biar overlay kecil (paraf/initial) tetep gampang di-tap/pinch jarinya.
+    // Margin dalam ruang bitmap, dibagi scale() biar tetap kerasa konsisten di layar berapa
+    // pun ukuran render-nya.
     private fun hitTestRect(overlay: SignatureOverlay): RectF {
-        val margin = 40f
+        val s = scale()
+        val margin = if (s != 0f) 40f / s else 40f
         val rect = overlayRect(overlay)
         return RectF(
             rect.left - margin,
