@@ -8,6 +8,10 @@
     <string name="open_pdf">Choose PDF Document</string>
     <string name="add_ttd">Add Sign</string>
     <string name="add_paraf">Add Initial</string>
+    <string name="add_signature">Add Signature</string>
+    <string name="undo">Undo</string>
+    <string name="redo">Redo</string>
+    <string name="back">Back</string>
     <string name="overlay_type_ttd">Sign</string>
     <string name="overlay_type_paraf">Initial</string>
     <string name="save_and_share">Preview &amp; Share</string>

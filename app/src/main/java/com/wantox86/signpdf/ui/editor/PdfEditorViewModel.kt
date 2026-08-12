@@ -46,6 +46,8 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
     val isLoadingPages: StateFlow<Boolean> = _isLoadingPages
     private val _loadError = MutableStateFlow<String?>(null)
     val loadError: StateFlow<String?> = _loadError
+    private val _documentTitle = MutableStateFlow("")
+    val documentTitle: StateFlow<String> = _documentTitle
 
     private var pdfDocument: PdfDocument? = null
     private val undoStack = ArrayDeque<List<SignatureOverlay>>()
@@ -69,6 +71,7 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
 
                 val fileName = resolveDisplayName(context, uri)
                 pdfDocument = PdfDocument(uri, fileName, pageCount)
+                _documentTitle.value = fileName
                 _pages.value = List(pageCount) { null }
                 renderAllPages()
             } catch (e: Exception) {

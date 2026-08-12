@@ -38,6 +38,7 @@ class PdfEditorFragment : Fragment() {
     private var awaitingPreviousBitmapRef: Any? = null
     private var allOverlays: List<SignatureOverlay> = emptyList()
     private var progressDialog: AlertDialog? = null
+    private var isSignatureMenuExpanded = false
 
     private val importImageLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
@@ -70,7 +71,12 @@ class PdfEditorFragment : Fragment() {
             viewModel.updateOverlays(merged)
         }
 
+        binding.fabAddSignature.setOnClickListener {
+            toggleSignatureMenu()
+        }
+
         binding.fabAddTtd.setOnClickListener {
+            toggleSignatureMenu()
             SignaturePickerBottomSheet.newInstance(
                 overlayType = OverlayType.TTD,
                 hasSavedSignature = signatureViewModel.ttdBitmap.value != null
@@ -79,6 +85,7 @@ class PdfEditorFragment : Fragment() {
         }
 
         binding.fabAddParaf.setOnClickListener {
+            toggleSignatureMenu()
             SignaturePickerBottomSheet.newInstance(
                 overlayType = OverlayType.PARAF,
                 hasSavedSignature = signatureViewModel.parafBitmap.value != null
@@ -90,12 +97,24 @@ class PdfEditorFragment : Fragment() {
             viewModel.export()
         }
 
-        binding.btnUndo.setOnClickListener {
-            viewModel.undoOverlay()
+        binding.toolbarEditor.setNavigationOnClickListener {
+            findNavController().navigateUp()
         }
 
-        binding.btnRedo.setOnClickListener {
-            viewModel.redoOverlay()
+        binding.toolbarEditor.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                com.wantox86.signpdf.R.id.action_undo -> {
+                    viewModel.undoOverlay()
+                    true
+                }
+
+                com.wantox86.signpdf.R.id.action_redo -> {
+                    viewModel.redoOverlay()
+                    true
+                }
+
+                else -> false
+            }
         }
 
         parentFragmentManager.setFragmentResultListener(
@@ -160,6 +179,12 @@ class PdfEditorFragment : Fragment() {
         // terikat viewLifecycleOwner, otomatis cancel bersih tiap onDestroyView.
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.documentTitle.collectLatest { title ->
+                        binding.tvDocumentTitle.text = title
+                    }
+                }
+
                 launch {
                     viewModel.pages.collectLatest { pages ->
                         // adapter.onPageVisible dipanggil dari dalam onBindViewHolder, yang bisa
@@ -293,6 +318,31 @@ class PdfEditorFragment : Fragment() {
             }
         }
         return bestIndex
+    }
+
+    // Speed-dial: fab_add_signature cuma toggle visibility+animasi dua FAB yang udah ada
+    // (fab_add_ttd/fab_add_paraf) -- listener asli keduanya nggak diubah sama sekali, cuma
+    // ditambah pemanggilan toggle ini di awal biar menu auto-collapse begitu salah satu dipilih.
+    private fun toggleSignatureMenu() {
+        isSignatureMenuExpanded = !isSignatureMenuExpanded
+        val targets = listOf(binding.fabAddTtd, binding.fabAddParaf)
+        targets.forEach { fab ->
+            if (isSignatureMenuExpanded) {
+                fab.visibility = View.VISIBLE
+                fab.alpha = 0f
+                fab.scaleX = 0f
+                fab.scaleY = 0f
+                fab.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(150).start()
+            } else {
+                fab.animate()
+                    .alpha(0f)
+                    .scaleX(0f)
+                    .scaleY(0f)
+                    .setDuration(150)
+                    .withEndAction { fab.visibility = View.GONE }
+                    .start()
+            }
+        }
     }
 
     private fun showProgress() {
