@@ -21,9 +21,10 @@ import java.io.File
 sealed class ExportState {
     data object Idle : ExportState()
     data object Loading : ExportState()
-    // overlayCount: diagnostic sementara buat nelusurin laporan "TTD nggak muncul di preview" --
-    // biar next test ketauan overlay-nya kebawa nggak sampe ke titik export.
-    data class Success(val file: File, val overlayCount: Int) : ExportState()
+    // diagnostics: log mentah dari EmbedSignatureToPdfUseCase (config bitmap, hasil
+    // PDImageXObject, koordinat final vs batas halaman) -- buat nelusurin laporan "overlay
+    // ke-embed tapi nggak kelihatan di preview" langsung dari device asli, tanpa adb/logcat.
+    data class Success(val file: File, val diagnostics: String) : ExportState()
     data class Error(val message: String) : ExportState()
 }
 
@@ -143,9 +144,9 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
             _exportState.value = ExportState.Loading
             try {
                 val overlaysToEmbed = _overlays.value
-                val (updatedDocument, outputFile) = exportPdfUseCase.execute(document, overlaysToEmbed)
-                pdfDocument = updatedDocument
-                _exportState.value = ExportState.Success(outputFile, overlaysToEmbed.size)
+                val result = exportPdfUseCase.execute(document, overlaysToEmbed)
+                pdfDocument = result.document
+                _exportState.value = ExportState.Success(result.file, result.diagnostics)
             } catch (e: Exception) {
                 val reason = e.message ?: e.javaClass.simpleName
                 _exportState.value = ExportState.Error("${context.getString(R.string.error_export)}: $reason")

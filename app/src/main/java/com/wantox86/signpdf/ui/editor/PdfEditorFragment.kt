@@ -7,6 +7,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
+import android.widget.ScrollView
+import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
@@ -210,13 +212,11 @@ class PdfEditorFragment : Fragment() {
                     is ExportState.Loading -> showProgress()
                     is ExportState.Success -> {
                         hideProgress()
-                        // Diagnostic sementara: nunjukin berapa overlay yang ikut di-export,
-                        // biar ketauan overlay-nya kebawa nggak sampe titik ini.
-                        Snackbar.make(
-                            binding.root,
-                            "Exported with ${state.overlayCount} overlay(s)",
-                            Snackbar.LENGTH_SHORT
-                        ).show()
+                        // Diagnostic sementara: dialog selectable/copyable nunjukin detail proses
+                        // embed (config bitmap, hasil PDImageXObject, koordinat final vs batas
+                        // halaman) -- buat nelusurin laporan "overlay ke-embed tapi nggak
+                        // kelihatan di preview" tanpa perlu adb/logcat.
+                        showExportDiagnostics(state.diagnostics)
                         findNavController().navigate(
                             com.wantox86.signpdf.R.id.action_pdfEditorFragment_to_pdfPreviewFragment,
                             bundleOf("filePath" to state.file.absolutePath)
@@ -267,6 +267,22 @@ class PdfEditorFragment : Fragment() {
             offsetY = pageView?.top?.toFloat() ?: 0f
         )
         binding.signatureOverlayView.setOverlays(overlaysForCurrentPage)
+    }
+
+    private fun showExportDiagnostics(diagnostics: String) {
+        val padding = (16 * resources.displayMetrics.density).toInt()
+        val textView = TextView(requireContext()).apply {
+            text = diagnostics
+            setPadding(padding, padding, padding, padding)
+            setTextIsSelectable(true)
+            textSize = 11f
+        }
+        val scrollView = ScrollView(requireContext()).apply { addView(textView) }
+        AlertDialog.Builder(requireContext())
+            .setTitle("Export diagnostics")
+            .setView(scrollView)
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     private fun showProgress() {

@@ -7,9 +7,11 @@ import java.io.File
 class ExportPdfUseCase(
     private val embedSignatureToPdfUseCase: EmbedSignatureToPdfUseCase
 ) {
-    suspend fun execute(document: PdfDocument, overlays: List<SignatureOverlay>): Pair<PdfDocument, File> {
-        val output = embedSignatureToPdfUseCase.execute(document, overlays)
-        val updated = document.copy(outputPath = output.absolutePath)
-        return updated to output
+    data class Result(val document: PdfDocument, val file: File, val diagnostics: String)
+
+    suspend fun execute(document: PdfDocument, overlays: List<SignatureOverlay>): Result {
+        val embedResult = embedSignatureToPdfUseCase.execute(document, overlays)
+        val updated = document.copy(outputPath = embedResult.file.absolutePath)
+        return Result(updated, embedResult.file, embedResult.diagnostics)
     }
 }

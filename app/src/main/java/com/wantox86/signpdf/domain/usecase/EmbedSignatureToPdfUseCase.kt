@@ -14,8 +14,16 @@ import java.io.File
 
 class EmbedSignatureToPdfUseCase(private val context: Context) {
 
-    suspend fun execute(document: PdfDocument, overlays: List<SignatureOverlay>): File =
+    // File + log diagnostic mentah (config bitmap, hasil PDImageXObject, koordinat final vs
+    // batas halaman) -- dipake buat nelusurin laporan "overlay ke-embed (count > 0) tapi nggak
+    // kelihatan" tanpa perlu adb/logcat, langsung dari device asli.
+    data class EmbedResult(val file: File, val diagnostics: String)
+
+    suspend fun execute(document: PdfDocument, overlays: List<SignatureOverlay>): EmbedResult =
         withContext(Dispatchers.IO) {
+            val log = StringBuilder()
+            log.appendLine("Overlays to embed: ${overlays.size}")
+
             val inputStream = context.contentResolver.openInputStream(document.uri)
                 ?: throw IllegalArgumentException("Cannot open input stream for PDF URI")
 
@@ -52,6 +60,9 @@ class EmbedSignatureToPdfUseCase(private val context: Context) {
                     renderedWidthPx = actualRenderedWidthPx
                 )
 
+                log.appendLine("Page $pageIndex: mediaBox=${mediaBoxWidth}x${mediaBoxHeight}pt rotation=$rotation displayWH=${displayWidth}x${displayHeight}pt")
+                log.appendLine("  actualRenderedWidthPx=$actualRenderedWidthPx scaleX=${scale.scaleX} scaleY=${scale.scaleY}")
+
                 val contentStream = PDPageContentStream(
                     pdfDoc,
                     page,
@@ -70,7 +81,14 @@ class EmbedSignatureToPdfUseCase(private val context: Context) {
                 }
 
                 pageOverlays.forEach { overlay ->
+                    log.appendLine(
+                        "  overlay ${overlay.id.take(8)}: bitmap=${overlay.bitmap.width}x${overlay.bitmap.height} " +
+                            "config=${overlay.bitmap.config} hasAlpha=${overlay.bitmap.hasAlpha()} " +
+                            "isRecycled=${overlay.bitmap.isRecycled}"
+                    )
                     val pdImage = LosslessFactory.createFromImage(pdfDoc, overlay.bitmap)
+                    log.appendLine("    PDImageXObject created: ${pdImage.width}x${pdImage.height} isStencil=${pdImage.isStencil}")
+
                     val pdfX = PdfCoordinateConverter.toPdfX(overlay.x, scale.scaleX)
                     val pdfY = PdfCoordinateConverter.toPdfY(
                         pageHeightPt = displayHeight,
@@ -78,13 +96,17 @@ class EmbedSignatureToPdfUseCase(private val context: Context) {
                         overlayHeightPx = overlay.height,
                         scaleY = scale.scaleY
                     )
-                    contentStream.drawImage(
-                        pdImage,
-                        pdfX,
-                        pdfY,
-                        overlay.width * scale.scaleX,
-                        overlay.height * scale.scaleY
+                    val drawWidth = overlay.width * scale.scaleX
+                    val drawHeight = overlay.height * scale.scaleY
+                    log.appendLine(
+                        "    placed at pdfX=$pdfX pdfY=$pdfY w=$drawWidth h=$drawHeight " +
+                            "(page bounds 0..$displayWidth x 0..$displayHeight)"
                     )
+                    val inBounds = pdfX >= 0 && pdfY >= 0 &&
+                        (pdfX + drawWidth) <= displayWidth && (pdfY + drawHeight) <= displayHeight
+                    log.appendLine("    fully in-bounds: $inBounds")
+
+                    contentStream.drawImage(pdImage, pdfX, pdfY, drawWidth, drawHeight)
                 }
 
                 contentStream.close()
@@ -93,6 +115,7 @@ class EmbedSignatureToPdfUseCase(private val context: Context) {
             val outputFile = File(context.filesDir, "signed_${document.fileName}")
             pdfDoc.save(outputFile)
             pdfDoc.close()
-            outputFile
+            log.appendLine("Saved to: ${outputFile.absolutePath} (${outputFile.length()} bytes)")
+            EmbedResult(outputFile, log.toString())
         }
 }
