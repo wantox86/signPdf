@@ -17,6 +17,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.SimpleItemAnimator
 import com.google.android.material.snackbar.Snackbar
 import com.wantox86.signpdf.databinding.FragmentPdfEditorBinding
 import com.wantox86.signpdf.domain.model.OverlayType
@@ -53,6 +54,11 @@ class PdfEditorFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.recyclerPdfPages.adapter = adapter
+        // notifyItemChanged() default-nya mainin change-animation (crossfade ke ViewHolder
+        // pengganti) -- kalau itu kejadian di item yang overlay-nya lagi disentuh, view penerima
+        // touch di-swap di tengah gesture dan drag-nya putus. Matikan biar rebind terjadi
+        // in-place di holder yang sama.
+        (binding.recyclerPdfPages.itemAnimator as? SimpleItemAnimator)?.supportsChangeAnimations = false
 
         // Overlay sekarang jadi bagian dari tiap item halaman (lihat PdfPageAdapter /
         // SignatureOverlayView) -- callback ini udah dikasih tau pageIndex halaman yang bener
@@ -254,10 +260,30 @@ class PdfEditorFragment : Fragment() {
         }
     }
 
+    // Halaman target buat nambah TTD/paraf = halaman yang PALING DOMINAN kelihatan di layar,
+    // bukan findFirstVisibleItemPosition() -- yang "first visible" bisa halaman sebelumnya yang
+    // cuma nongol beberapa px di ujung atas layar, bikin TTD ketambah ke halaman yang salah
+    // (persis keluhan "muncul di page sebelumnya").
     private fun currentPageIndex(): Int {
-        val layoutManager = binding.recyclerPdfPages.layoutManager as? LinearLayoutManager
-        val index = layoutManager?.findFirstVisibleItemPosition() ?: 0
-        return if (index < 0) 0 else index
+        val layoutManager = binding.recyclerPdfPages.layoutManager as? LinearLayoutManager ?: return 0
+        val first = layoutManager.findFirstVisibleItemPosition()
+        val last = layoutManager.findLastVisibleItemPosition()
+        if (first < 0) return 0
+
+        val recyclerHeight = binding.recyclerPdfPages.height
+        var bestIndex = first
+        var bestVisibleHeight = -1
+        for (index in first..last) {
+            val itemView = layoutManager.findViewByPosition(index) ?: continue
+            val visibleTop = maxOf(itemView.top, 0)
+            val visibleBottom = minOf(itemView.bottom, recyclerHeight)
+            val visibleHeight = visibleBottom - visibleTop
+            if (visibleHeight > bestVisibleHeight) {
+                bestVisibleHeight = visibleHeight
+                bestIndex = index
+            }
+        }
+        return bestIndex
     }
 
     private fun showExportDiagnostics(diagnostics: String) {

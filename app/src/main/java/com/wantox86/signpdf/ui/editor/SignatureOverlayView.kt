@@ -33,6 +33,13 @@ class SignatureOverlayView @JvmOverloads constructor(
     private var lastTouchX = 0f
     private var lastTouchY = 0f
 
+    // Perubahan drag/resize di-commit ke luar (onOverlaysChanged) SEKALI pas gesture selesai
+    // (ACTION_UP/CANCEL), bukan per event move -- commit per-move bikin Fragment/adapter
+    // notifyItemChanged() ke item yang lagi disentuh, RecyclerView rebind view-nya di tengah
+    // gesture, dan touch stream-nya putus (gejala "TTD nggak bisa digeser"). Bonus: undo/redo
+    // jadi per gesture utuh, bukan per piksel gerakan.
+    private var hasPendingCommit = false
+
     // Ukuran bitmap halaman yang lagi dibind -- overlay.x/y/width/height selalu dalam ruang
     // koordinat INI (bitmap-pixel-space), sementara View-nya sendiri dirender di ukuran layar
     // (dp*density, biasanya beda dari ukuran bitmap asli karena ImageView fitCenter). scale()
@@ -205,6 +212,10 @@ class SignatureOverlayView @JvmOverloads constructor(
             MotionEvent.ACTION_UP,
             MotionEvent.ACTION_CANCEL -> {
                 parent?.requestDisallowInterceptTouchEvent(false)
+                if (hasPendingCommit) {
+                    hasPendingCommit = false
+                    onOverlaysChanged(overlays.toList())
+                }
                 return true
             }
         }
@@ -222,7 +233,9 @@ class SignatureOverlayView @JvmOverloads constructor(
         if (idx >= 0) {
             val clamped = clampToPage(overlay)
             overlays[idx] = clamped
-            onOverlaysChanged(overlays.toList())
+            // Update visual lokal doang -- commit ke luar ditunda sampai gesture selesai
+            // (lihat komentar hasPendingCommit).
+            hasPendingCommit = true
             invalidate()
         }
     }
