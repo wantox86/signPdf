@@ -7,14 +7,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
-import android.widget.ScrollView
-import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.SimpleItemAnimator
@@ -25,6 +25,7 @@ import com.wantox86.signpdf.domain.model.SignatureOverlay
 import com.wantox86.signpdf.ui.signature.SignaturePickerBottomSheet
 import com.wantox86.signpdf.ui.signature.SignatureViewModel
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class PdfEditorFragment : Fragment() {
     private var _binding: FragmentPdfEditorBinding? = null
@@ -149,112 +150,120 @@ class PdfEditorFragment : Fragment() {
         val pdfUri = arguments?.getString("pdfUri")
         pdfUri?.let { viewModel.loadPdf(it) }
 
-        lifecycleScope.launchWhenStarted {
-            viewModel.pages.collectLatest { pages ->
-                // adapter.onPageVisible dipanggil dari dalam onBindViewHolder, yang bisa memicu
-                // update pages ini secara synchronous selagi RecyclerView masih di tengah layout
-                // pass (viewModelScope pakai Dispatchers.Main.immediate). notifyDataSetChanged()
-                // langsung di titik itu bikin IllegalStateException "Cannot call this method
-                // while RecyclerView is computing a layout or scrolling" -- post() biar nunggu
-                // layout pass yang lagi jalan kelar dulu.
-                binding.recyclerPdfPages.post {
-                    if (_binding != null) adapter.setPages(pages)
-                }
-            }
-        }
-
-        lifecycleScope.launchWhenStarted {
-            viewModel.isLoadingPages.collectLatest { loading ->
-                binding.progressLoadingPages.visibility = if (loading) View.VISIBLE else View.GONE
-                // Nambah overlay butuh bitmap halaman itu udah kerender buat nentuin ukuran
-                // halaman yang bener (lihat komentar di PdfEditorViewModel.addOverlay) -- kalau
-                // user scroll cepet ke halaman bawah & nambahin sign sebelum render halaman itu
-                // kelar, dulu bakal ke-fallback ke ukuran tebakan yang salah (khususnya buat
-                // dokumen landscape). Disable tombol tambah sampe render semua halaman kelar
-                // biar kejadian itu nggak mungkin lagi.
-                binding.fabAddTtd.isEnabled = !loading
-                binding.fabAddParaf.isEnabled = !loading
-            }
-        }
-
-        lifecycleScope.launchWhenStarted {
-            viewModel.overlays.collectLatest { overlays ->
-                allOverlays = overlays
-                adapter.setOverlays(overlays)
-            }
-        }
-
-        lifecycleScope.launchWhenStarted {
-            signatureViewModel.ttdBitmap.collectLatest { bitmap ->
-                if (
-                    awaitingOverlayType == OverlayType.TTD &&
-                    bitmap != null &&
-                    bitmap !== awaitingPreviousBitmapRef
-                ) {
-                    viewModel.addOverlay(OverlayType.TTD, bitmap, currentPageIndex())
-                    awaitingOverlayType = null
-                    awaitingPreviousBitmapRef = null
-                }
-            }
-        }
-
-        lifecycleScope.launchWhenStarted {
-            signatureViewModel.parafBitmap.collectLatest { bitmap ->
-                if (
-                    awaitingOverlayType == OverlayType.PARAF &&
-                    bitmap != null &&
-                    bitmap !== awaitingPreviousBitmapRef
-                ) {
-                    viewModel.addOverlay(OverlayType.PARAF, bitmap, currentPageIndex())
-                    awaitingOverlayType = null
-                    awaitingPreviousBitmapRef = null
-                }
-            }
-        }
-
-        lifecycleScope.launchWhenStarted {
-            viewModel.exportState.collectLatest { state ->
-                when (state) {
-                    is ExportState.Idle -> hideProgress()
-                    is ExportState.Loading -> showProgress()
-                    is ExportState.Success -> {
-                        hideProgress()
-                        // Diagnostic sementara: dialog selectable/copyable nunjukin detail proses
-                        // embed (config bitmap, hasil PDImageXObject, koordinat final vs batas
-                        // halaman) -- buat nelusurin laporan "overlay ke-embed tapi nggak
-                        // kelihatan di preview" tanpa perlu adb/logcat.
-                        showExportDiagnostics(state.diagnostics)
-                        findNavController().navigate(
-                            com.wantox86.signpdf.R.id.action_pdfEditorFragment_to_pdfPreviewFragment,
-                            bundleOf(
-                                "filePath" to state.file.absolutePath,
-                                "firstSignedPage" to state.firstSignedPage
-                            )
-                        )
-                        viewModel.resetExportState()
-                    }
-
-                    is ExportState.Error -> {
-                        hideProgress()
-                        Snackbar.make(binding.root, state.message, Snackbar.LENGTH_LONG).show()
-                        viewModel.resetExportState()
-                    }
-                }
-            }
-        }
-
-        lifecycleScope.launchWhenStarted {
-            viewModel.loadError.collectLatest { errorMessage ->
-                if (errorMessage != null) {
-                    AlertDialog.Builder(requireContext())
-                        .setTitle("Error")
-                        .setMessage(errorMessage)
-                        .setCancelable(false)
-                        .setPositiveButton("OK") { _, _ ->
-                            viewModel.clearLoadError()
-                            findNavController().navigateUp()
+        // viewLifecycleOwner.lifecycleScope + repeatOnLifecycle (bukan lifecycleScope Fragment +
+        // launchWhenStarted): lifecycleScope milik Fragment BERTAHAN lintas re-create view (mis.
+        // balik dari back-stack), jadi launchWhenStarted lama nggak pernah ke-cancel -- tiap kali
+        // Fragment ini kelihatan lagi, collector BARU numpuk di atas yang lama. Beberapa
+        // collector aktif bareng brarti satu event (klik tombol, hasil signature, dll) bisa
+        // ke-proses berkali-kali (contoh nyata: navigate() dobel ke NavController, yang kedua
+        // gagal dengan IllegalArgumentException karena destination udah pindah). repeatOnLifecycle
+        // terikat viewLifecycleOwner, otomatis cancel bersih tiap onDestroyView.
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.pages.collectLatest { pages ->
+                        // adapter.onPageVisible dipanggil dari dalam onBindViewHolder, yang bisa
+                        // memicu update pages ini secara synchronous selagi RecyclerView masih di
+                        // tengah layout pass (viewModelScope pakai Dispatchers.Main.immediate).
+                        // notifyDataSetChanged() langsung di titik itu bikin IllegalStateException
+                        // "Cannot call this method while RecyclerView is computing a layout or
+                        // scrolling" -- post() biar nunggu layout pass yang lagi jalan kelar dulu.
+                        binding.recyclerPdfPages.post {
+                            if (_binding != null) adapter.setPages(pages)
                         }
-                        .show()
+                    }
+                }
+
+                launch {
+                    viewModel.isLoadingPages.collectLatest { loading ->
+                        binding.progressLoadingPages.visibility = if (loading) View.VISIBLE else View.GONE
+                        // Nambah overlay butuh bitmap halaman itu udah kerender buat nentuin
+                        // ukuran halaman yang bener (lihat komentar di
+                        // PdfEditorViewModel.addOverlay) -- kalau user scroll cepet ke halaman
+                        // bawah & nambahin sign sebelum render halaman itu kelar, dulu bakal
+                        // ke-fallback ke ukuran tebakan yang salah (khususnya buat dokumen
+                        // landscape). Disable tombol tambah sampe render semua halaman kelar
+                        // biar kejadian itu nggak mungkin lagi.
+                        binding.fabAddTtd.isEnabled = !loading
+                        binding.fabAddParaf.isEnabled = !loading
+                    }
+                }
+
+                launch {
+                    viewModel.overlays.collectLatest { overlays ->
+                        allOverlays = overlays
+                        adapter.setOverlays(overlays)
+                    }
+                }
+
+                launch {
+                    signatureViewModel.ttdBitmap.collectLatest { bitmap ->
+                        if (
+                            awaitingOverlayType == OverlayType.TTD &&
+                            bitmap != null &&
+                            bitmap !== awaitingPreviousBitmapRef
+                        ) {
+                            viewModel.addOverlay(OverlayType.TTD, bitmap, currentPageIndex())
+                            awaitingOverlayType = null
+                            awaitingPreviousBitmapRef = null
+                        }
+                    }
+                }
+
+                launch {
+                    signatureViewModel.parafBitmap.collectLatest { bitmap ->
+                        if (
+                            awaitingOverlayType == OverlayType.PARAF &&
+                            bitmap != null &&
+                            bitmap !== awaitingPreviousBitmapRef
+                        ) {
+                            viewModel.addOverlay(OverlayType.PARAF, bitmap, currentPageIndex())
+                            awaitingOverlayType = null
+                            awaitingPreviousBitmapRef = null
+                        }
+                    }
+                }
+
+                launch {
+                    viewModel.exportState.collectLatest { state ->
+                        when (state) {
+                            is ExportState.Idle -> hideProgress()
+                            is ExportState.Loading -> showProgress()
+                            is ExportState.Success -> {
+                                hideProgress()
+                                findNavController().navigate(
+                                    com.wantox86.signpdf.R.id.action_pdfEditorFragment_to_pdfPreviewFragment,
+                                    bundleOf(
+                                        "filePath" to state.file.absolutePath,
+                                        "firstSignedPage" to state.firstSignedPage
+                                    )
+                                )
+                                viewModel.resetExportState()
+                            }
+
+                            is ExportState.Error -> {
+                                hideProgress()
+                                Snackbar.make(binding.root, state.message, Snackbar.LENGTH_LONG).show()
+                                viewModel.resetExportState()
+                            }
+                        }
+                    }
+                }
+
+                launch {
+                    viewModel.loadError.collectLatest { errorMessage ->
+                        if (errorMessage != null) {
+                            AlertDialog.Builder(requireContext())
+                                .setTitle("Error")
+                                .setMessage(errorMessage)
+                                .setCancelable(false)
+                                .setPositiveButton("OK") { _, _ ->
+                                    viewModel.clearLoadError()
+                                    findNavController().navigateUp()
+                                }
+                                .show()
+                        }
+                    }
                 }
             }
         }
@@ -284,22 +293,6 @@ class PdfEditorFragment : Fragment() {
             }
         }
         return bestIndex
-    }
-
-    private fun showExportDiagnostics(diagnostics: String) {
-        val padding = (16 * resources.displayMetrics.density).toInt()
-        val textView = TextView(requireContext()).apply {
-            text = diagnostics
-            setPadding(padding, padding, padding, padding)
-            setTextIsSelectable(true)
-            textSize = 11f
-        }
-        val scrollView = ScrollView(requireContext()).apply { addView(textView) }
-        AlertDialog.Builder(requireContext())
-            .setTitle("Export diagnostics")
-            .setView(scrollView)
-            .setPositiveButton("OK", null)
-            .show()
     }
 
     private fun showProgress() {
