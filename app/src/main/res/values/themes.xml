@@ -2,7 +2,7 @@
 <resources>
     <!-- Light-only (bukan DayNight): dokumen PDF selalu putih/hitam kayak kertas asli,
          ngikutin dark mode sistem bikin area transparan di render PDF jadi hitam dan teks
-         ketutupan. Tetep Light-only pas migrasi ke Material3 -- keputusan ini nggak berubah. -->
+         ketutupan. Tetep Light-only pas migrasi ke Material3, keputusan ini nggak berubah. -->
     <style name="Theme.SignPDF" parent="Theme.Material3.Light.NoActionBar">
         <item name="colorPrimary">@color/sp_primary</item>
         <item name="colorOnPrimary">@color/sp_on_primary</item>
