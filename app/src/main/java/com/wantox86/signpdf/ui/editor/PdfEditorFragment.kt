@@ -264,6 +264,13 @@ class PdfEditorFragment : Fragment() {
     private fun renderCurrentPageOverlays() {
         val pageIndex = currentPageIndex()
         val overlaysForCurrentPage = allOverlays.filter { it.pageIndex == pageIndex }
+
+        val layoutManager = binding.recyclerPdfPages.layoutManager as? LinearLayoutManager
+        val pageView = layoutManager?.findViewByPosition(pageIndex)
+        binding.signatureOverlayView.setPageOffset(
+            offsetX = pageView?.left?.toFloat() ?: 0f,
+            offsetY = pageView?.top?.toFloat() ?: 0f
+        )
         binding.signatureOverlayView.setOverlays(overlaysForCurrentPage)
     }
 

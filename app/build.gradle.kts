@@ -17,7 +17,25 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        getByName("debug") {
+            // Keystore debug tetap, di-commit ke repo (bukan generated on-the-fly kayak default
+            // AGP) -- CI (GitHub Actions runner) itu VM baru tiap run, jadi kalau andelin
+            // keystore debug default yang auto-generate, tiap build APK punya signature beda,
+            // dan install APK baru di atas yang lama selalu ke-reject Android ("signature
+            // conflict"), user kepaksa uninstall dulu tiap kali. Keystore debug bukan rahasia
+            // (credential-nya emang publik/well-known), aman di-commit.
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(

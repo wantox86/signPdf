@@ -25,6 +25,23 @@ class SignatureOverlayView @JvmOverloads constructor(
     private var lastTouchX = 0f
     private var lastTouchY = 0f
 
+    // overlay.x/y itu koordinat page-local (relatif ke pojok kiri-atas bitmap halaman, dipake
+    // juga sama EmbedSignatureToPdfUseCase pas nge-embed ke PDF asli). View ini sendiri adalah
+    // sibling di atas RecyclerView yang nggak ikut discroll -- tanpa offset ini, begitu halaman
+    // discroll posisi gambar/hit-test overlay nggak nyambung lagi sama posisi asli di halaman,
+    // dan kalau overlay di-drag/di-resize pas lagi discroll, koordinat yang kesimpen ikut korup
+    // (numpang ke-mix sama scroll offset), yang ujungnya bikin overlay ke-embed di posisi salah
+    // (di luar halaman) pas export.
+    private var pageOffsetX = 0f
+    private var pageOffsetY = 0f
+
+    fun setPageOffset(offsetX: Float, offsetY: Float) {
+        if (pageOffsetX == offsetX && pageOffsetY == offsetY) return
+        pageOffsetX = offsetX
+        pageOffsetY = offsetY
+        invalidate()
+    }
+
     private val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         color = Color.parseColor("#33B5E5")
@@ -54,8 +71,15 @@ class SignatureOverlayView @JvmOverloads constructor(
             val factor = detector.scaleFactor
             val newWidth = max(80f, selected.width * factor)
             val newHeight = max(40f, selected.height * factor)
+            // Anchor resize ke center overlay, bukan ke pojok kiri-atas -- sebelumnya x/y
+            // dibiarin tetap pas width/height berubah, jadi box-nya "kabur" ngembang ke
+            // kanan-bawah tiap discale alih-alih membesar/mengecil di tempat.
+            val centerX = selected.x + selected.width / 2f
+            val centerY = selected.y + selected.height / 2f
             updateOverlay(
                 selected.copy(
+                    x = centerX - newWidth / 2f,
+                    y = centerY - newHeight / 2f,
                     width = newWidth,
                     height = newHeight
                 )
@@ -76,6 +100,8 @@ class SignatureOverlayView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
+        canvas.save()
+        canvas.translate(pageOffsetX, pageOffsetY)
         overlays.forEach { overlay ->
             val dst = RectF(
                 overlay.x,
@@ -99,17 +125,24 @@ class SignatureOverlayView @JvmOverloads constructor(
                 )
             }
         }
+        canvas.restore()
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         scaleDetector.onTouchEvent(event)
+
+        // Semua hit-test/drag di bawah ini kerja di ruang koordinat page-local (sama kayak
+        // overlay.x/y yang tersimpan), jadi konversi dulu dari koordinat layar (event.x/y)
+        // sebelum dipakai -- lihat komentar pageOffsetX/Y di atas.
+        val touchX = event.x - pageOffsetX
+        val touchY = event.y - pageOffsetY
 
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 val selected = selectedOverlay()
                 if (selected != null) {
                     val selectedRect = overlayRect(selected)
-                    if (closeRect(selectedRect).contains(event.x, event.y)) {
+                    if (closeRect(selectedRect).contains(touchX, touchY)) {
                         overlays.removeAll { it.id == selected.id }
                         selectedOverlayId = null
                         onOverlaysChanged(overlays.toList())
@@ -118,10 +151,10 @@ class SignatureOverlayView @JvmOverloads constructor(
                     }
                 }
 
-                val touched = overlays.asReversed().firstOrNull { overlayRect(it).contains(event.x, event.y) }
+                val touched = overlays.asReversed().firstOrNull { overlayRect(it).contains(touchX, touchY) }
                 selectedOverlayId = touched?.id
-                lastTouchX = event.x
-                lastTouchY = event.y
+                lastTouchX = touchX
+                lastTouchY = touchY
                 invalidate()
                 return touched != null
             }
@@ -132,10 +165,10 @@ class SignatureOverlayView @JvmOverloads constructor(
                 }
 
                 val selected = selectedOverlay() ?: return false
-                val dx = event.x - lastTouchX
-                val dy = event.y - lastTouchY
-                lastTouchX = event.x
-                lastTouchY = event.y
+                val dx = touchX - lastTouchX
+                val dy = touchY - lastTouchY
+                lastTouchX = touchX
+                lastTouchY = touchY
 
                 updateOverlay(
                     selected.copy(
