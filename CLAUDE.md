@@ -1,483 +1,159 @@
-# CLAUDE.md — Android PDF Digital Signature Editor
+# CLAUDE.md — SignPDF (Android PDF Digital Signature Editor)
+
+> This document describes the project's **current state**, not its original plan. Substantial
+> changes were made during development — if you encounter an older reference mentioning Hilt or
+> "on-demand per-page rendering," treat it as outdated. This file is the source of truth.
 
 ## Project Overview
 
-**Nama Aplikasi:** SignPDF (nama sementara, bisa disesuaikan)
-**Platform:** Android (min SDK 26 / Android 8.0+)
-**Bahasa:** Kotlin
-**Build System:** Gradle (Kotlin DSL)
-**Architecture:** MVVM + Clean Architecture (UseCase layer)
+**Name:** SignPDF
+**Package:** `com.wantox86.signpdf`
+**Platform:** Android, minimum SDK 26 (Android 8.0), target and compile SDK 34
+**Language:** Kotlin
+**Build System:** Gradle Kotlin DSL
+**Architecture:** MVVM with a UseCase layer, **without a dependency-injection framework** (see "Architectural Decisions" below)
 
-Aplikasi Android untuk membuka, mengedit, dan menandatangani dokumen PDF secara digital.
-Pengguna dapat menambahkan **tanda tangan (TTD)** dan **paraf** ke dokumen PDF, baik dari gambar yang sudah ada (PNG/JPG transparan) maupun dengan menggambar langsung di layar. Hasil PDF dapat dibagikan ke aplikasi lain seperti WhatsApp, Teams, Telegram, dan lainnya.
+An application for opening, digitally signing, and sharing PDF documents from a mobile device. Users can add a **Sign** (signature) and an **Initial** — these are the user-facing English labels; internally, the code still uses `OverlayType.TTD` / `OverlayType.PARAF` (the enum names were not renamed, only the displayed labels were translated — see `R.string.overlay_type_ttd` / `overlay_type_paraf`).
 
 ---
 
-## Tech Stack
+## Tech Stack (Actual, Not Planned)
 
-| Komponen | Library / Tool | Keterangan |
+| Component | Library / Tool | Version |
 |---|---|---|
-| PDF Rendering | `com.tom_roush:pdfbox-android` | Render & manipulasi PDF |
-| PDF Embed Signature | `com.tom_roush:pdfbox-android` | Embed gambar TTD ke PDF |
-| Signature Canvas | `com.github.gcacace:signature-pad` atau custom `View` | Menggambar TTD di layar |
-| Image Loading | `io.coil-kt:coil` | Load gambar TTD dari file |
-| Background Removal | Manual (PNG transparan sudah cukup) | User sudah siapkan PNG no-bg |
-| File Picker | `ActivityResultContracts.GetContent` | Pilih file PDF & gambar |
-| Share | `FileProvider` + `Intent.ACTION_SEND` | Share PDF ke apps lain |
-| DI | `Hilt` | Dependency Injection |
-| Navigation | `Navigation Component` | Single-activity navigation |
-| ViewModel | `androidx.lifecycle:lifecycle-viewmodel-ktx` | State management |
-| Coroutines | `kotlinx-coroutines-android` | Async processing |
-| UI | `ViewBinding` + `ConstraintLayout` | Layout |
-| Storage | `Scoped Storage` + `FileProvider` | Android 8+ compliant |
+| PDF rendering & manipulation | `com.tom-roush:pdfbox-android` | 2.0.27.0 |
+| Signature canvas | `com.github.gcacace:signature-pad` | 1.3.1 |
+| Image loading | `io.coil-kt:coil` | 2.6.0 |
+| Navigation | AndroidX Navigation Component | 2.7.7 |
+| ViewModel/Lifecycle | `androidx.lifecycle:*-ktx` | 2.8.0 |
+| Coroutines | `kotlinx-coroutines-android` | 1.8.0 |
+| UI | ViewBinding + ConstraintLayout (no Compose) | — |
+| AGP / Kotlin / Gradle | 8.3.2 / 1.9.23 / 8.6 | — |
+
+**No dependency-injection framework is used.** Hilt was configured in the original plan (`@HiltAndroidApp`, `AppModule`, `kapt`) but was subsequently removed in full — no ViewModel ever actually used `@Inject`; every dependency (`PdfRepository`, `EmbedSignatureToPdfUseCase`, etc.) is constructed manually in the ViewModel constructor (`private val pdfRepository = PdfRepository(app)`). New dependencies should follow this manual-construction pattern; do not reintroduce Hilt unless the dependency graph genuinely outgrows manual wiring.
 
 ---
 
-## Fitur Utama
-
-### 1. TTD (Tanda Tangan)
-- **Sumber TTD:**
-  - Gambar langsung di layar (`SignaturePad` / custom `Canvas`)
-  - Import dari file gambar (PNG/JPG tanpa background)
-- **Penempatan:**
-  - Drag-and-drop bebas di atas halaman PDF
-  - Resize dengan pinch gesture
-  - Konfirmasi posisi sebelum embed
-- **Output:** Ditanam (embed) ke PDF sebagai gambar transparan
-
-### 2. Paraf
-- Fitur identik dengan TTD namun terpisah secara slot/label
-- Bisa punya source paraf berbeda dari TTD
-- Bisa ditempel di posisi berbeda, bisa berulang di banyak halaman
-
-### 3. PDF Viewer
-- Render tiap halaman PDF sebagai `Bitmap`
-- Swipe antar halaman (ViewPager2 atau RecyclerView horizontal)
-- Zoom in/out per halaman
-- Overlay layer untuk posisi TTD/paraf di atas halaman
-
-### 4. Open With (Intent Filter)
-- Apps terdaftar sebagai PDF handler di sistem Android
-- Muncul di chooser saat user tap file PDF dari File Manager, Gmail, WhatsApp, Google Drive, Browser, dll
-- PDF langsung terbuka di editor tanpa perlu buka apps dulu
-- Support URI scheme `content://` dan `file://`
-
-### 5. Export & Share
-- Simpan PDF hasil ke penyimpanan internal app
-- Share ke aplikasi lain via `Intent.ACTION_SEND` + `FileProvider`
-- Target: WhatsApp, Telegram, Teams, Gmail, dan semua apps yang support PDF
-
----
-
-## Struktur Direktori
+## Directory Structure (Actual)
 
 ```
-app/
-├── src/main/
-│   ├── java/com/example/signpdf/
-│   │   ├── MainActivity.kt
-│   │   ├── di/
-│   │   │   └── AppModule.kt
-│   │   ├── domain/
-│   │   │   ├── model/
-│   │   │   │   ├── SignatureSource.kt       # sealed class: Canvas | ImageFile
-│   │   │   │   ├── SignatureOverlay.kt      # data: type, bitmap, x, y, w, h, page
-│   │   │   │   └── PdfDocument.kt
-│   │   │   └── usecase/
-│   │   │       ├── EmbedSignatureToPdfUseCase.kt
-│   │   │       ├── RenderPdfPageUseCase.kt
-│   │   │       └── ExportPdfUseCase.kt
-│   │   ├── data/
-│   │   │   ├── PdfRepository.kt
-│   │   │   └── SignatureRepository.kt
-│   │   └── ui/
-│   │       ├── home/
-│   │       │   ├── HomeFragment.kt          # Open PDF, pilih file
-│   │       │   └── HomeViewModel.kt
-│   │       ├── editor/
-│   │       │   ├── PdfEditorFragment.kt     # Main editor: viewer + overlay TTD
-│   │       │   ├── PdfEditorViewModel.kt
-│   │       │   ├── PdfPageAdapter.kt        # RecyclerView adapter untuk halaman
-│   │       │   └── SignatureOverlayView.kt  # Custom View: drag/resize overlay
-│   │       ├── signature/
-│   │       │   ├── SignaturePickerBottomSheet.kt  # Pilih: Gambar di layar vs Import
-│   │       │   ├── SignatureCanvasFragment.kt     # Menggambar TTD/paraf
-│   │       │   └── SignatureViewModel.kt
-│   │       └── share/
-│   │           └── ShareHelper.kt
-│   ├── res/
-│   │   ├── layout/
-│   │   │   ├── activity_main.xml
-│   │   │   ├── fragment_home.xml
-│   │   │   ├── fragment_pdf_editor.xml
-│   │   │   ├── fragment_signature_canvas.xml
-│   │   │   ├── item_pdf_page.xml
-│   │   │   └── bottomsheet_signature_picker.xml
-│   │   └── xml/
-│   │       └── file_paths.xml               # FileProvider paths
-│   └── AndroidManifest.xml
+app/src/main/java/com/wantox86/signpdf/
+├── SignPdfApplication.kt        # PDFBoxResourceLoader.init() + CrashHandler.install()
+├── CrashHandler.kt              # global uncaught-exception handler; writes the stack trace to a
+│                                 # file, shown as a copyable dialog on the next launch (MainActivity)
+├── MainActivity.kt              # single activity, hosts the NavController, handles ACTION_VIEW intents (Open With)
+├── data/
+│   ├── PdfRepository.kt         # wraps RenderPdfPageUseCase
+│   └── SignatureRepository.kt   # persists user-saved TTD/Paraf bitmaps (to filesDir/signatures/*.png)
+├── domain/
+│   ├── model/
+│   │   ├── PdfDocument.kt       # uri, fileName, pageCount, outputPath
+│   │   └── SignatureOverlay.kt  # id, type (OverlayType), bitmap, pageIndex, x/y/width/height, createdAt
+│   ├── usecase/
+│   │   ├── RenderPdfPageUseCase.kt       # renders one PDF page to a Bitmap; fixed width RENDER_WIDTH_PX = 1080
+│   │   ├── EmbedSignatureToPdfUseCase.kt # embeds all overlays into the original PDF; handles page rotation and bounds clamping
+│   │   └── ExportPdfUseCase.kt           # orchestration: invokes the embed step, updates PdfDocument.outputPath
+│   └── util/
+│       └── PdfCoordinateConverter.kt     # pure coordinate-conversion math, covered by a unit test
+└── ui/
+    ├── home/                     # HomeFragment + HomeViewModel — entry point, file picker
+    ├── editor/
+    │   ├── PdfEditorFragment.kt      # main screen: PDF viewer + Sign/Initial overlays
+    │   ├── PdfEditorViewModel.kt
+    │   ├── PdfPageAdapter.kt         # RecyclerView adapter; overlays are rendered per page (see below)
+    │   ├── SignatureOverlayView.kt   # custom drag/resize View, now instantiated per page (not globally)
+    │   └── ZoomableContainer.kt      # pinch-to-zoom + pan wrapper around the page RecyclerView
+    ├── signature/                # SignatureCanvasFragment, SignaturePickerBottomSheet, SignatureViewModel
+    ├── preview/                  # PdfPreviewFragment + PdfPreviewViewModel — review before sharing
+    └── share/
+        └── ShareHelper.kt
+
+app/src/test/java/.../domain/util/PdfCoordinateConverterTest.kt   # the only unit test in the repository
 ```
+
+There is no `SignatureSource.kt` (planned early — a sealed class with `FromCanvas`/`FromImageFile` variants — but never actually used in the codebase, and subsequently removed) and no `di/AppModule.kt` (the Hilt module, removed along with Hilt).
 
 ---
 
-## Model Data
+## Key Architectural Decisions
 
-### `SignatureSource.kt`
+### 1. Overlays are rendered per page, not by a single global view
+
+`SignatureOverlayView` is a **child of each `item_pdf_page.xml` item** (one instance per RecyclerView page), rather than a single fullscreen view stacked above the entire list, as in the original design. This was a significant change following the discovery of a serious bug: the original design determined the "current page" using `findFirstVisibleItemPosition()`, so if a user placed a Sign on a page that was visually the lower of two partially visible pages during scrolling, its coordinates were stored relative to the wrong page — which could result in the signature being embedded outside the page's visible bounds (invisible in the final output), and overlays appearing to vanish whenever the first-visible page changed during scrolling.
+
+Consequences of the current design:
+- `overlay.x/y/width/height` are always purely page-local (relative to that page's own bitmap); there is no longer any scroll-offset concept.
+- The `SignatureOverlayView` inside each item has `setPageBitmapSize(width, height)`, called on every `bind()`, which computes a `scale()` factor (the ratio between the view's on-screen size and the actual 1080px-wide source bitmap), used to convert between touch coordinates (screen space) and stored coordinates (bitmap space).
+- Item layouts use **ConstraintLayout** (not FrameLayout), with the overlay view explicitly constrained to all four edges of the `ImageView`. A plain `match_parent` child inside a `wrap_content` parent measured `UNSPECIFIED` (the normal condition for a RecyclerView item) can collapse to a size of 0x0.
+- Drag/resize changes are **only committed externally (via `onOverlaysChanged`) once the gesture ends** (`ACTION_UP`/`ACTION_CANCEL`), not on every `ACTION_MOVE`. Committing on every move causes RecyclerView's `notifyItemChanged()` to rebind the touched item mid-gesture, breaking the touch stream. Visual feedback during the drag is handled via a local `invalidate()` only.
+- `requestDisallowInterceptTouchEvent` is called when an overlay captures a drag, to prevent it from competing with the RecyclerView's own scroll handling.
+- All overlay changes are clamped to the page's bounds (`clampToPage()` in `SignatureOverlayView`) — an overlay cannot be dragged or resized outside the page.
+
+A full write-up of this investigation is available in **`fixing-signing.md`** (repository root) — worth reading before modifying anything in this area again.
+
+### 2. All pages are rendered eagerly, not lazily on scroll
+
+`PdfEditorViewModel.renderAllPages()` renders every page at once (progressively, emitting each page's bitmap as it completes) when a document is opened, rather than the original windowed/lazy approach (rendering the current page ±1, unloading distant pages). The lazy approach caused a newly-scrolled-into-view page to briefly show its skeleton placeholder before the asynchronous render completed, which read as "the signature disappears." This trade-off — higher upfront memory usage — is accepted as reasonable given that signed documents are typically not hundreds of pages long.
+
+The "Add Sign"/"Add Initial" buttons are **disabled while rendering is in progress** (`isLoadingPages == true`), preventing overlays from being added to a page whose bitmap does not yet exist (this previously caused a fallback to an incorrect guessed portrait size, which was badly wrong for landscape documents).
+
+### 3. Coordinate conversion and page rotation
+
+`PdfCoordinateConverter` (pure functions, unit tested) handles converting Android pixel coordinates (top-left origin) to PDF point coordinates (bottom-left origin). `EmbedSignatureToPdfUseCase` also compensates for pages carrying a `/Rotate` entry (90/180/270°) — omitting this places overlays in the wrong coordinate space entirely for rotated pages (width and height are swapped for 90°/270° rotations). A last-resort clamp is applied at the embed step as well: any overlay computed to be out of bounds is forced back within the page rather than silently rendered off it.
+
+### 4. Fragment Flow collection: `viewLifecycleOwner.lifecycleScope` with `repeatOnLifecycle`
+
+**Do not** use `lifecycleScope.launchWhenStarted { flow.collectLatest {...} }` (a Fragment's `lifecycleScope`, as opposed to its view's). All Fragments (`HomeFragment`, `PdfEditorFragment`, `PdfPreviewFragment`) follow this pattern:
 ```kotlin
-sealed class SignatureSource {
-    data class FromCanvas(val bitmap: Bitmap) : SignatureSource()
-    data class FromImageFile(val uri: Uri) : SignatureSource()
-}
-```
-
-### `SignatureOverlay.kt`
-```kotlin
-data class SignatureOverlay(
-    val id: String = UUID.randomUUID().toString(),
-    val type: OverlayType,         // TTD atau PARAF
-    val bitmap: Bitmap,
-    val pageIndex: Int,
-    var x: Float,
-    var y: Float,
-    var width: Float,
-    var height: Float,
-    val createdAt: Long = System.currentTimeMillis()
-)
-
-enum class OverlayType { TTD, PARAF }
-```
-
-### `PdfDocument.kt`
-```kotlin
-data class PdfDocument(
-    val uri: Uri,
-    val fileName: String,
-    val pageCount: Int,
-    val outputPath: String? = null
-)
-```
-
----
-
-## Alur Utama (User Flow)
-
-```
-[Entry Point 1 — Manual]
-[Home Screen]
-    → Tap "Buka PDF" → File Picker → PDF terbuka di Editor
-
-[Entry Point 2 — Open With / Intent Filter]
-[Apps lain: File Manager, Gmail, WhatsApp, Drive, Browser]
-    → User tap file PDF → Android chooser muncul
-    → User pilih "SignPDF" → MainActivity menerima Intent.ACTION_VIEW
-    → Langsung navigasi ke PdfEditorFragment (skip Home)
-    
-[PDF Editor]
-    → Halaman di-render satu per satu (RecyclerView/ViewPager2)
-    → Tap "Tambah TTD" atau "Tambah Paraf"
-        → BottomSheet: pilih "Gambar di Layar" atau "Import Gambar"
-            → [Gambar di Layar] → SignatureCanvasFragment
-                → User menggambar → Simpan sebagai Bitmap transparan
-            → [Import Gambar] → FilePicker (PNG/JPG)
-                → Bitmap di-load, background transparan dipertahankan
-        → Overlay TTD/Paraf muncul di halaman aktif
-        → User drag ke posisi yang diinginkan
-        → User pinch untuk resize
-        → Tap "Confirm" → overlay terkunci (bisa di-edit ulang)
-    
-    → Tap "Simpan & Share"
-        → EmbedSignatureToPdfUseCase: semua overlay di-render ke PDF asli
-        → PDF output disimpan ke internal storage
-        → ShareHelper: Intent.ACTION_SEND → pilih apps tujuan
-```
-
----
-
-## Use Case: Embed Signature ke PDF
-
-### `EmbedSignatureToPdfUseCase.kt`
-```kotlin
-// Pseudocode alur embed
-suspend fun execute(document: PdfDocument, overlays: List<SignatureOverlay>): File {
-    val pdfDoc = PDDocument.load(context.contentResolver.openInputStream(document.uri))
-
-    overlays.groupBy { it.pageIndex }.forEach { (pageIndex, pageOverlays) ->
-        val page = pdfDoc.getPage(pageIndex)
-        val contentStream = PDPageContentStream(pdfDoc, page, APPEND, true, true)
-
-        pageOverlays.forEach { overlay ->
-            val pdImage = LosslessFactory.createFromImage(pdfDoc, overlay.bitmap)
-            // Koordinat PDF berbasis bottom-left, perlu konversi dari top-left Android
-            val pdfY = page.mediaBox.height - overlay.y - overlay.height
-            contentStream.drawImage(pdImage, overlay.x, pdfY, overlay.width, overlay.height)
-        }
-        contentStream.close()
-    }
-
-    val outputFile = File(context.filesDir, "signed_${document.fileName}")
-    pdfDoc.save(outputFile)
-    pdfDoc.close()
-    return outputFile
-}
-```
-
-> **Penting:** Koordinat Android (top-left origin) harus dikonversi ke koordinat PDF (bottom-left origin) saat embed.
-> Rasio antara pixel layar dan unit PDF (points) juga perlu diperhitungkan berdasarkan skala render.
-
----
-
-## Signature Canvas
-
-### Behavior `SignatureCanvasFragment`
-- Canvas putih dengan border subtle
-- Tombol **Clear** untuk hapus ulang
-- Tombol **Confirm** untuk simpan sebagai Bitmap dengan background transparan
-- Gunakan `Canvas.drawPath()` atau library `signature-pad`
-- Saat konfirmasi: crop area non-kosong, set background `Color.TRANSPARENT`
-
-### Hasil Bitmap Transparan
-```kotlin
-fun extractTransparentBitmap(canvas: SignaturePad): Bitmap {
-    val original = canvas.transparentSignatureBitmap // dari lib gcacace
-    // Atau manual: buat Bitmap ARGB_8888, gambar path di atasnya
-    return original
-}
-```
-
----
-
-## SignatureOverlayView (Drag & Resize)
-
-Custom `View` yang di-overlay di atas halaman PDF:
-
-- **Drag:** `ACTION_MOVE` touch event → update `x`, `y`
-- **Resize:** Pinch gesture via `ScaleGestureDetector` → update `width`, `height`
-- **Multi overlay:** support multiple overlay sekaligus per halaman, masing-masing independen
-- **Handle UI:** tampilkan border dashed + handle di pojok saat overlay dipilih
-- **Delete:** tombol "×" kecil di pojok kanan atas overlay saat dipilih
-
----
-
-## Intent Filter — Open With
-
-### `AndroidManifest.xml` (di dalam `<activity>` MainActivity)
-```xml
-<!-- Daftarkan apps sebagai PDF handler -->
-<intent-filter>
-    <action android:name="android.intent.action.VIEW" />
-    <category android:name="android.intent.category.DEFAULT" />
-    <category android:name="android.intent.category.BROWSABLE" />
-    <data android:mimeType="application/pdf" />
-</intent-filter>
-```
-
-Setelah ini, apps akan muncul di chooser ketika user membuka PDF dari:
-- File Manager (Files by Google, Cx File Explorer, dll)
-- Gmail / Outlook — attachment PDF
-- WhatsApp / Telegram — dokumen PDF yang diterima
-- Google Drive — open dengan apps lain
-- Browser — PDF hasil download
-
-### Handling Intent di `MainActivity.kt`
-```kotlin
-override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-    setContentView(R.layout.activity_main)
-
-    handleIncomingIntent(intent)
-}
-
-override fun onNewIntent(intent: Intent?) {
-    super.onNewIntent(intent)
-    // Handle jika apps sudah terbuka (singleTask launchMode)
-    intent?.let { handleIncomingIntent(it) }
-}
-
-private fun handleIncomingIntent(intent: Intent) {
-    if (intent.action == Intent.ACTION_VIEW) {
-        val pdfUri: Uri? = intent.data
-        if (pdfUri != null) {
-            // Langsung buka editor, skip Home screen
-            val bundle = bundleOf("pdfUri" to pdfUri.toString())
-            navController.navigate(R.id.pdfEditorFragment, bundle)
-        }
+viewLifecycleOwner.lifecycleScope.launch {
+    viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+        launch { flowA.collectLatest { ... } }
+        launch { flowB.collectLatest { ... } }
     }
 }
 ```
+Rationale: a Fragment's own `lifecycleScope` **survives view recreation** (e.g. returning via the back stack) — a previous `launchWhenStarted` block is never cancelled, so every time the Fragment becomes visible again, a new collector stacks on top of the old one. The effect is that a single event (a button tap, a signature result) gets processed multiple times by the accumulated collectors — this previously caused a real crash (`IllegalArgumentException: Navigation action ... cannot be found from the current destination`, because `navigate()` was invoked twice by two collectors for a single event). `repeatOnLifecycle` is tied to `viewLifecycleOwner`, so it is cleanly cancelled on every `onDestroyView`.
 
-### Tambahkan `launchMode` di `AndroidManifest.xml`
-```xml
-<activity
-    android:name=".MainActivity"
-    android:launchMode="singleTask"
-    ...>
-```
+### 5. CI/CD and signing
 
-> `singleTask` penting agar jika apps sudah terbuka, intent baru masuk via `onNewIntent` bukan membuat instance baru.
+A push to `main` or `release/**` triggers `.github/workflows/build-android.yml` (GitHub Actions, `ubuntu-latest`) — it builds a debug APK, runs unit tests first, and uploads the result as artifact `signpdf-debug-apk`. **No local Android SDK is required** for development in environments without Android Studio; local verification is limited to `./gradlew tasks` (validates configuration only), with actual compilation verified by CI.
 
-### Handling URI `content://` di `PdfEditorViewModel`
-```kotlin
-// URI dari Intent eksternal selalu content://, bukan file://
-// Gunakan contentResolver, BUKAN File(uri.path)
-val inputStream = context.contentResolver.openInputStream(pdfUri)
-val pdfDocument = PDDocument.load(inputStream)
-```
+`app/debug.keystore` is **intentionally committed** to the repository — this is not a credential leak (debug keystore credentials are public and standard by convention: alias `androiddebugkey`, password `android`). Without this, every CI build (a fresh VM per run) would generate a new keystore with a random key, giving each APK a different signature and causing every install to be rejected as a "signature conflict" unless the previous build was uninstalled first.
 
-> Jangan pernah asumsikan URI adalah `file://`. Selalu pakai `contentResolver.openInputStream(uri)`.
+### 6. Crash handler and diagnostics
 
----
+`CrashHandler.install()` (invoked from `SignPdfApplication.onCreate()`) installs a global `Thread.setDefaultUncaughtExceptionHandler` — it writes the last crash's stack trace to a local file, which is shown as a copyable dialog (`TextView.setTextIsSelectable(true)` inside a `ScrollView`) the next time `MainActivity` launches. This is useful for debugging on a device without `adb`/logcat access.
 
-## FileProvider Setup
+### 7. Pinch-to-zoom is a pure visual transform
 
-### `AndroidManifest.xml`
-```xml
-<provider
-    android:name="androidx.core.content.FileProvider"
-    android:authorities="${applicationId}.fileprovider"
-    android:exported="false"
-    android:grantUriPermissions="true">
-    <meta-data
-        android:name="android.support.FILE_PROVIDER_PATHS"
-        android:resource="@xml/file_paths" />
-</provider>
-```
+`ZoomableContainer` (`ui/editor/ZoomableContainer.kt`) wraps the page `RecyclerView` in `fragment_pdf_editor.xml` and applies pinch-to-zoom (plus pan while zoomed, and double-tap to reset) as `scaleX`/`scaleY`/`translationX`/`translationY` on the RecyclerView as a whole — one zoom level for the entire document, not per page. It deliberately never touches `SignatureOverlay` coordinates or `SignatureOverlayView` at all: zoom is purely a rendering-level transform, and Android automatically un-transforms touch coordinates delivered to a scaled child, so overlay drag/resize math is completely unaffected regardless of zoom level.
 
-### `res/xml/file_paths.xml`
-```xml
-<paths>
-    <files-path name="signed_pdfs" path="." />
-    <cache-path name="cache" path="." />
-</paths>
-```
+Disambiguation between a page-zoom gesture and an overlay drag/resize relies entirely on the standard `requestDisallowInterceptTouchEvent` mechanism that `SignatureOverlayView` already calls when it captures a touch on a selected overlay (see decision #1) — once called, Android will not invoke `onInterceptTouchEvent()` on any ancestor (including `ZoomableContainer`) for the rest of that gesture, so a second finger touching down mid-drag is guaranteed to reach the overlay's own `ScaleGestureDetector` (for resize) rather than triggering page zoom. No changes were needed in `SignatureOverlayView` to support this.
+
+Known edge case: if the RecyclerView has already begun consuming a single-finger vertical scroll (which itself calls `requestDisallowInterceptTouchEvent` per standard nested-scrolling behavior) before a second finger touches down, `ZoomableContainer` will not get a chance to intercept for that gesture. This only affects the uncommon case of starting a scroll and only then deciding to pinch; a normal two-finger-pinch-from-the-start gesture is unaffected.
 
 ---
 
-## Share PDF
+## Permissions and Manifest
 
-### `ShareHelper.kt`
-```kotlin
-fun sharePdf(context: Context, file: File) {
-    val uri = FileProvider.getUriForFile(
-        context,
-        "${context.packageName}.fileprovider",
-        file
-    )
-    val intent = Intent(Intent.ACTION_SEND).apply {
-        type = "application/pdf"
-        putExtra(Intent.EXTRA_STREAM, uri)
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    }
-    context.startActivity(Intent.createChooser(intent, "Bagikan PDF via"))
-}
-```
+- `READ_EXTERNAL_STORAGE` (maxSdk 32) + `READ_MEDIA_IMAGES` — for reading imported signature images.
+- **No** `WRITE_EXTERNAL_STORAGE` — output PDFs are saved to `context.filesDir` (the app's internal storage), which requires no external write permission.
+- `MainActivity` — `launchMode="singleTask"`, with two intent filters: `MAIN`/`LAUNCHER` (normal launch) and `ACTION_VIEW` + `mimeType="application/pdf"` (Open With, from apps such as File Manager, Gmail, WhatsApp, Drive, or a browser). URIs from external intents are always `content://` — **never** use `File(uri.path)`; always use `contentResolver.openInputStream(uri)`.
+- A `FileProvider` is registered (`${applicationId}.fileprovider`) for sharing the resulting PDF with other apps; its path configuration is in `res/xml/file_paths.xml`.
+- `android:icon`/`android:roundIcon` — `ic_launcher`/`ic_launcher_round` mipmaps at five densities, generated from the app's icon artwork.
+
+The exported PDF's file name is resolved via a `ContentResolver` query for the real display name (`OpenableColumns.DISPLAY_NAME`) — **not** `uri.lastPathSegment` (which is the SAF provider's internal document ID, not a file name, and carries no usable extension). The output naming format is `<original name>_signed.pdf`.
 
 ---
 
-## Permissions
+## Known Limitations
 
-### `AndroidManifest.xml`
-```xml
-<!-- Baca file PDF & gambar dari storage -->
-<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-    android:maxSdkVersion="32" />
+- Pinch-to-zoom max scale is capped at 3x (`ZoomableContainer.MAX_SCALE`); since pages are always rendered at a fixed `RENDER_WIDTH_PX = 1080`, zooming beyond that reveals no additional detail and would only look pixelated.
+- Not tested on tablets, large screens, or landscape device orientation (testing to date has focused on portrait-mode phones).
+- Only one unit test exists (`PdfCoordinateConverterTest`); no instrumented (`androidTest`) tests have been added.
 
-<!-- Android 13+ -->
-<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-<uses-permission android:name="android.permission.READ_MEDIA_DOCUMENTS" />
-```
+## Related Documentation
 
-> Tidak perlu `WRITE_EXTERNAL_STORAGE` karena output disimpan di internal storage app (`filesDir`).
-
----
-
-## Gradle Dependencies (app/build.gradle.kts)
-
-```kotlin
-dependencies {
-    // PDF
-    implementation("com.tom_roush:pdfbox-android:2.0.27.0")
-
-    // Signature Canvas
-    implementation("com.github.gcacace:signature-pad:0.3.1")
-
-    // Image loading
-    implementation("io.coil-kt:coil:2.6.0")
-
-    // Hilt
-    implementation("com.google.dagger:hilt-android:2.51")
-    kapt("com.google.dagger:hilt-android-compiler:2.51")
-
-    // Lifecycle / ViewModel / Coroutines
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
-
-    // Navigation
-    implementation("androidx.navigation:navigation-fragment-ktx:2.7.7")
-    implementation("androidx.navigation:navigation-ui-ktx:2.7.7")
-
-    // UI
-    implementation("androidx.recyclerview:recyclerview:1.3.2")
-    implementation("androidx.viewpager2:viewpager2:1.1.0")
-    implementation("com.google.android.material:material:1.12.0")
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
-}
-```
-
----
-
-## Sprint Plan
-
-### Sprint 1 — Foundation (1 minggu)
-- [ ] Setup project: Kotlin, Hilt, Navigation Component
-- [ ] HomeFragment: open file PDF via FilePicker
-- [ ] Intent Filter: daftarkan apps sebagai PDF handler (`ACTION_VIEW`)
-- [ ] `MainActivity.handleIncomingIntent()`: langsung ke editor jika dibuka via Open With
-- [ ] PdfEditorFragment: render halaman PDF sebagai Bitmap (pdfbox-android)
-- [ ] RecyclerView/ViewPager2 untuk scroll antar halaman
-
-### Sprint 2 — Signature Input (1 minggu)
-- [ ] SignaturePickerBottomSheet: pilih Canvas atau Import
-- [ ] SignatureCanvasFragment: gambar TTD/paraf, simpan Bitmap transparan
-- [ ] Import gambar PNG/JPG dari storage, pertahankan transparansi
-- [ ] SignatureViewModel: simpan hasil TTD & paraf terpisah
-
-### Sprint 3 — Overlay & Drag (1 minggu)
-- [ ] SignatureOverlayView: render overlay TTD/paraf di atas halaman
-- [ ] Implementasi drag (touch move)
-- [ ] Implementasi resize (pinch ScaleGestureDetector)
-- [ ] Multi-overlay support (TTD dan paraf bisa keduanya ada)
-- [ ] Tombol hapus per overlay
-
-### Sprint 4 — Embed & Share (1 minggu)
-- [ ] EmbedSignatureToPdfUseCase: overlay → PDF via pdfbox-android
-- [ ] Koordinat konversi Android → PDF
-- [ ] FileProvider setup
-- [ ] ShareHelper: share PDF ke aplikasi lain
-- [ ] Tes end-to-end: WhatsApp, Telegram, Teams, Gmail
-
-### Sprint 5 — Polish & Edge Cases (1 minggu)
-- [ ] Handling PDF multi-halaman: TTD di satu halaman, paraf di halaman lain
-- [ ] Undo/redo overlay
-- [ ] Preview sebelum share
-- [ ] Loading state & error handling (PDF corrupt, file terlalu besar)
-- [ ] Dukungan Android 8–14
-
----
-
-## Catatan Penting
-
-1. **Koordinat PDF vs Android:** PDFBox menggunakan sistem koordinat bottom-left (origin di bawah). Android menggunakan top-left. Rumus konversi: `pdfY = pageHeight - androidY - overlayHeight`. Skala juga perlu disesuaikan antara pixel layar dan PDF points (1 point = 1/72 inch).
-
-2. **Transparansi Bitmap:** Pastikan Bitmap dibuat dengan `Bitmap.Config.ARGB_8888`. Saat embed ke PDF via `LosslessFactory`, transparansi PNG dipertahankan.
-
-3. **Memori:** Halaman PDF yang di-render sebagai Bitmap bisa besar. Gunakan `BitmapFactory.Options.inSampleSize` atau render per halaman saja (bukan semua sekaligus).
-
-4. **pdfbox-android vs iText:** pdfbox-android gratis (Apache 2.0). iText memerlukan lisensi komersial untuk produksi. Gunakan pdfbox-android.
-
-5. **Background Removal:** Aplikasi tidak melakukan background removal otomatis. User diasumsikan sudah menyiapkan PNG transparan. Jika ingin menambahkan fitur auto-remove background, pertimbangkan ML Kit atau library `rembg` via Python microservice (out of scope MVP).
-
-7. **Intent Filter & Open With:** Tambahkan `<intent-filter>` dengan `ACTION_VIEW` + `mimeType="application/pdf"` di `AndroidManifest.xml`. Set `launchMode="singleTask"` di Activity agar tidak double instance. Handle incoming URI di `onCreate` dan `onNewIntent`.
-
-8. **Jangan gunakan `file://` URI:** URI yang masuk via Intent eksternal selalu `content://`. Mengakses via `File(uri.path)` akan gagal atau throw `SecurityException`. Selalu gunakan `contentResolver.openInputStream(uri)`.
-
+- `fixing-signing.md` (repository root) — an in-depth analysis and debugging history of the overlay-placement bug (read this before modifying `SignatureOverlayView`, `PdfPageAdapter`, or coordinate-conversion code again).
+- `.github/copilot-instructions.md` — instructions for GitHub Copilot; should be kept consistent with this file whenever the architecture changes.
+- `README.md` — a short overview for new readers and contributors.
