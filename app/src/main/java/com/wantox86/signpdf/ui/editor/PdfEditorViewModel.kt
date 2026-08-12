@@ -94,9 +94,15 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun addOverlay(type: OverlayType, bitmap: Bitmap, pageIndex: Int) {
-        val pageBitmap = _pages.value.getOrNull(pageIndex)
-        val pageWidth = pageBitmap?.width?.toFloat() ?: 1080f
-        val pageHeight = pageBitmap?.height?.toFloat() ?: 1528f
+        // pageBitmap null berarti halaman ini belum kelar dirender -- Fragment nge-disable
+        // tombol tambah selama isLoadingPages true jadi ini SEHARUSNYA nggak kejadian, tapi
+        // kalau toh kejadian, mending nggak nambahin overlay sama sekali daripada nebak ukuran
+        // halaman (fallback lama nebak ukuran potrait, ngaco parah buat dokumen landscape --
+        // itu akar bug "overlay ke-taruh jauh di luar halaman" yang kejadian pas nambah sign di
+        // halaman bawah yang belum sempet kerender).
+        val pageBitmap = _pages.value.getOrNull(pageIndex) ?: return
+        val pageWidth = pageBitmap.width.toFloat()
+        val pageHeight = pageBitmap.height.toFloat()
         val defaultWidth = pageWidth * 0.18f
         val aspectRatio = if (bitmap.width > 0) bitmap.height.toFloat() / bitmap.width.toFloat() else 0.35f
         val defaultHeight = defaultWidth * aspectRatio

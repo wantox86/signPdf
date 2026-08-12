@@ -167,6 +167,14 @@ class PdfEditorFragment : Fragment() {
         lifecycleScope.launchWhenStarted {
             viewModel.isLoadingPages.collectLatest { loading ->
                 binding.progressLoadingPages.visibility = if (loading) View.VISIBLE else View.GONE
+                // Nambah overlay butuh bitmap halaman itu udah kerender buat nentuin ukuran
+                // halaman yang bener (lihat komentar di PdfEditorViewModel.addOverlay) -- kalau
+                // user scroll cepet ke halaman bawah & nambahin sign sebelum render halaman itu
+                // kelar, dulu bakal ke-fallback ke ukuran tebakan yang salah (khususnya buat
+                // dokumen landscape). Disable tombol tambah sampe render semua halaman kelar
+                // biar kejadian itu nggak mungkin lagi.
+                binding.fabAddTtd.isEnabled = !loading
+                binding.fabAddParaf.isEnabled = !loading
             }
         }
 
