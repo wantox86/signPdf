@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">SignPDF</string>
-    <string name="open_pdf">Open PDF</string>
+    <string name="app_subtitle">Add signatures to PDF documents</string>
+    <string name="home_headline">Ready to sign a document?</string>
+    <string name="home_description">Draw or import your signature, place it anywhere on the page, and share the signed PDF in seconds.</string>
+    <string name="home_microcopy">Processed on your device</string>
+    <string name="open_pdf">Choose PDF Document</string>
     <string name="add_ttd">Add Sign</string>
     <string name="add_paraf">Add Initial</string>
     <string name="overlay_type_ttd">Sign</string>
