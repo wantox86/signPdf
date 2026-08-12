@@ -1,80 +1,80 @@
 # SignPDF
 
-Aplikasi Android buat buka, tanda tangan (digital), dan bagikan dokumen PDF langsung dari HP — tanpa perlu print-scan-print. Tambahin **Sign** (tanda tangan) dan **Initial** (paraf) ke halaman mana pun, geser & resize posisinya, lalu share hasilnya ke WhatsApp/Telegram/Gmail/apa aja yang bisa nerima PDF.
+An Android application for opening, digitally signing, and sharing PDF documents directly from a mobile device, without the traditional print-sign-scan workflow. Users can add a **Sign** (signature) and an **Initial** to any page, drag and resize their placement, and share the result to any app that accepts PDFs (WhatsApp, Telegram, Gmail, etc.).
 
-## Fitur
+## Features
 
-- **Buka PDF** dari file picker, atau langsung lewat menu "Open With" di app lain (Files, Gmail, WhatsApp, Drive, browser, dll)
-- **Sign & Initial**: gambar langsung di layar, import dari gambar PNG/JPG (background transparan dipertahankan), atau pakai yang udah pernah disimpan sebelumnya
-- **Drag & resize** bebas per halaman, bisa naruh beberapa Sign/Initial sekaligus di halaman berbeda
-- **Undo/redo** per aksi (nambah, geser, resize, hapus)
-- **Preview** hasil akhir sebelum di-share, auto-scroll ke halaman yang ditandatangani
-- **Share** ke aplikasi lain via Android share sheet standar
+- **Open a PDF** from the system file picker, or directly via the "Open With" menu in other apps (Files, Gmail, WhatsApp, Drive, browsers, etc.)
+- **Sign & Initial**: draw directly on screen, import from a PNG/JPG image (transparent background preserved), or reuse a previously saved signature
+- **Drag and resize** freely per page; multiple signatures/initials can be placed across different pages simultaneously
+- **Undo/redo** per action (add, move, resize, delete)
+- **Preview** the final result before sharing, auto-scrolling to the first signed page
+- **Share** to other applications via the standard Android share sheet
 
-## Tech stack
+## Tech Stack
 
-| Komponen | Library |
+| Component | Library |
 |---|---|
-| Bahasa | Kotlin |
-| Render & manipulasi PDF | [`com.tom-roush:pdfbox-android`](https://github.com/TomRoush/PdfBox-Android) |
+| Language | Kotlin |
+| PDF rendering & manipulation | [`com.tom-roush:pdfbox-android`](https://github.com/TomRoush/PdfBox-Android) |
 | Signature canvas | [`com.github.gcacace:signature-pad`](https://github.com/gcacace/android-signaturepad) |
 | Image loading | [`io.coil-kt:coil`](https://coil-kt.github.io/coil/) |
-| Navigasi | AndroidX Navigation Component (single-activity) |
-| UI | ViewBinding + ConstraintLayout (bukan Compose) |
-| Async | Kotlin Coroutines + Flow |
-| Arsitektur | MVVM + UseCase layer (bukan pakai DI framework — lihat catatan di bawah) |
+| Navigation | AndroidX Navigation Component (single-activity) |
+| UI | ViewBinding + ConstraintLayout (no Jetpack Compose) |
+| Asynchrony | Kotlin Coroutines + Flow |
+| Architecture | MVVM + UseCase layer (no dependency-injection framework — see notes below) |
 
-Min SDK 26 (Android 8.0), target & compile SDK 34.
+Minimum SDK 26 (Android 8.0), target and compile SDK 34.
 
-## Build & run
+## Build & Run
 
-### Lewat CI (nggak butuh Android Studio/SDK lokal)
+### Via CI (no local Android Studio/SDK required)
 
-Tiap push ke branch `main` atau `release/**` otomatis di-build sama GitHub Actions (`.github/workflows/build-android.yml`) — hasilnya APK debug siap install, bisa didownload dari tab **Actions** repo ini (artifact `signpdf-debug-apk`). Bisa juga di-trigger manual lewat `workflow_dispatch`.
+Every push to the `main` or `release/**` branch is automatically built by GitHub Actions (`.github/workflows/build-android.yml`), producing a ready-to-install debug APK available from this repository's **Actions** tab (artifact `signpdf-debug-apk`). The workflow can also be triggered manually via `workflow_dispatch`.
 
-Keystore debug yang dipakai udah di-commit (`app/debug.keystore`) — **sengaja**, bukan kebocoran kredensial (kredensial keystore debug memang publik/standar), tujuannya biar tiap build APK dari CI konsisten pakai signature yang sama, jadi update install nggak pernah conflict/minta uninstall dulu.
+The debug keystore used for signing is committed to the repository (`app/debug.keystore`) intentionally — this is not a credential leak, as debug keystore credentials are public and standard by convention. Committing it ensures every CI-built APK is signed identically, so installing an updated build never conflicts with (or requires uninstalling) a previous one.
 
-### Lokal (butuh Android SDK)
+### Locally (requires the Android SDK)
 
 ```bash
-./gradlew assembleDebug   # build APK debug -> app/build/outputs/apk/debug/
-./gradlew test            # jalanin unit test
+./gradlew assembleDebug   # build a debug APK -> app/build/outputs/apk/debug/
+./gradlew test            # run unit tests
 ```
 
-## Struktur project
+## Project Structure
 
 ```
 app/src/main/java/com/wantox86/signpdf/
-├── SignPdfApplication.kt        # init PDFBoxResourceLoader + global crash handler
-├── CrashHandler.kt              # tangkep crash, tampilin stack trace di dialog copyable pas next launch
-├── MainActivity.kt              # single activity, host NavController, handle "Open With"
-├── data/                        # Repository (PdfRepository, SignatureRepository)
+├── SignPdfApplication.kt        # initializes PDFBoxResourceLoader and the global crash handler
+├── CrashHandler.kt              # catches crashes, shows the last stack trace in a copyable dialog on next launch
+├── MainActivity.kt              # single activity, hosts the NavController, handles "Open With" intents
+├── data/                        # repositories (PdfRepository, SignatureRepository)
 ├── domain/
 │   ├── model/                   # PdfDocument, SignatureOverlay
 │   ├── usecase/                 # RenderPdfPageUseCase, EmbedSignatureToPdfUseCase, ExportPdfUseCase
-│   └── util/                    # PdfCoordinateConverter (+ unit test)
+│   └── util/                    # PdfCoordinateConverter (with unit tests)
 └── ui/
-    ├── home/                    # HomeFragment — entry point, buka file picker
-    ├── editor/                  # PdfEditorFragment — halaman utama: viewer + overlay Sign/Initial
-    ├── signature/                # SignatureCanvasFragment, SignaturePickerBottomSheet
-    ├── preview/                  # PdfPreviewFragment — review hasil sebelum share
-    └── share/                    # ShareHelper
+    ├── home/                    # HomeFragment — entry point, opens the file picker
+    ├── editor/                  # PdfEditorFragment — main screen: viewer + Sign/Initial overlays
+    ├── signature/               # SignatureCanvasFragment, SignaturePickerBottomSheet
+    ├── preview/                 # PdfPreviewFragment — review the result before sharing
+    └── share/                   # ShareHelper
 ```
 
-## Catatan arsitektur penting
+## Notable Architectural Decisions
 
-- **Overlay per halaman, bukan satu view global.** `SignatureOverlayView` adalah child dari tiap item `RecyclerView` (satu instance per halaman), bukan satu view fullscreen yang numpuk di atas semua halaman. Ini keputusan sadar setelah bug lama (overlay salah tempat/ilang pas scroll) — detail lengkap penyebab & analisisnya ada di `fixing-signing.md`.
-- **Render semua halaman upfront**, bukan lazy per-scroll. Dokumen yang ditandatangani biasanya cuma beberapa halaman, jadi trade-off pakai lebih banyak memori di awal demi scroll yang nggak pernah nunjukin gap/skeleton itu sepadan buat use-case ini.
-- **Koordinat overlay** (`SignatureOverlay.x/y/width/height`) selalu dalam ruang piksel bitmap halaman (bukan piksel layar) — dikonversi ke satuan PDF (points, origin bottom-left) lewat `PdfCoordinateConverter` pas proses embed.
-- **Nggak pakai DI framework.** Hilt sempat dipasang di awal tapi di-drop — nggak ada satupun ViewModel yang benar-benar pakai `@Inject`, semua dependency di-construct manual di constructor. Untuk app sekecil ini, itu udah cukup.
-- **Collector Flow di Fragment pakai `viewLifecycleOwner.lifecycleScope` + `repeatOnLifecycle`**, bukan `lifecycleScope.launchWhenStarted` biasa. `lifecycleScope` milik Fragment bertahan lintas re-create view (misal balik dari back stack), jadi `launchWhenStarted` lama nggak pernah ke-cancel dan collector numpuk — pernah nyebabin crash navigasi dobel-trigger. Ikutin pola yang sudah ada di `PdfEditorFragment`/`PdfPreviewFragment`/`HomeFragment` kalau nambah collector baru.
+- **Overlays are rendered per page, not by a single global view.** `SignatureOverlayView` is a child of each RecyclerView page item, rather than one fullscreen view stacked above the entire list. This was a deliberate fix following a serious bug in which signatures could be placed on the wrong page and end up outside the document's visible bounds. Full analysis is documented in `fixing-signing.md`.
+- **All pages are rendered eagerly** rather than lazily on scroll. Documents being signed are typically only a few pages long, so the additional upfront memory cost is an acceptable trade-off for scrolling that never shows a rendering gap.
+- **Overlay coordinates** (`SignatureOverlay.x/y/width/height`) are always expressed in the page bitmap's own pixel space (not screen pixels), and are converted to PDF units (points, bottom-left origin) via `PdfCoordinateConverter` at embed time.
+- **No dependency-injection framework is used.** Hilt was set up initially but later removed, as no ViewModel ever actually used `@Inject` — every dependency is constructed manually in its constructor. This is sufficient for an application of this size.
+- **Flow collection in Fragments uses `viewLifecycleOwner.lifecycleScope` with `repeatOnLifecycle`**, not the deprecated `lifecycleScope.launchWhenStarted`. A Fragment's own `lifecycleScope` survives view recreation (e.g. returning via the back stack), so `launchWhenStarted` blocks never get cancelled and collectors accumulate — this previously caused a duplicate-navigation crash. Follow the existing pattern in `PdfEditorFragment`/`PdfPreviewFragment`/`HomeFragment` when adding new collectors.
 
-## Keterbatasan yang diketahui
+## Known Limitations
 
-- Belum ada zoom in/out di halaman PDF (cuma fit-width).
-- Preview & editor belum di-test di tablet/layar besar atau orientasi landscape device.
-- Belum ada test instrumented (`androidTest`) — cuma unit test buat `PdfCoordinateConverter`.
+- No pinch-to-zoom on PDF pages (fit-width only).
+- Not tested on tablets, large screens, or landscape device orientation.
+- No instrumented (`androidTest`) tests exist yet — only a unit test for `PdfCoordinateConverter`.
 
-## Lisensi
+## License
 
-MIT — lihat [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).
