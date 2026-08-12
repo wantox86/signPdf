@@ -35,7 +35,7 @@
         android:layout_height="match_parent">
 
         <!-- ZoomableContainer bungkus RecyclerView buat pinch-to-zoom + pan satu level ke semua
-             halaman. Murni transform visual di RecyclerView-nya sendiri -- nggak nyentuh
+             halaman. Murni transform visual di RecyclerView-nya sendiri: nggak nyentuh
              SignatureOverlayView atau koordinat overlay yang tersimpan sama sekali. -->
         <com.wantox86.signpdf.ui.editor.ZoomableContainer
             android:id="@+id/zoomable_container"
