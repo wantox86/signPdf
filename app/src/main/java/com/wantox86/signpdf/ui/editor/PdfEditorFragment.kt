@@ -34,7 +34,6 @@ class PdfEditorFragment : Fragment() {
     private var awaitingPreviousBitmapRef: Any? = null
     private var allOverlays: List<SignatureOverlay> = emptyList()
     private var progressDialog: AlertDialog? = null
-    private var lastVisiblePageIndex: Int = -1
 
     private val importImageLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
@@ -64,7 +63,6 @@ class PdfEditorFragment : Fragment() {
             binding.recyclerPdfPages.addOnScrollListener(object : androidx.recyclerview.widget.RecyclerView.OnScrollListener() {
                 override fun onScrolled(recyclerView: androidx.recyclerview.widget.RecyclerView, dx: Int, dy: Int) {
                     super.onScrolled(recyclerView, dx, dy)
-                    notifyVisiblePageChanged()
                     renderCurrentPageOverlays()
                 }
             })
@@ -212,6 +210,13 @@ class PdfEditorFragment : Fragment() {
                     is ExportState.Loading -> showProgress()
                     is ExportState.Success -> {
                         hideProgress()
+                        // Diagnostic sementara: nunjukin berapa overlay yang ikut di-export,
+                        // biar ketauan overlay-nya kebawa nggak sampe titik ini.
+                        Snackbar.make(
+                            binding.root,
+                            "Exported with ${state.overlayCount} overlay(s)",
+                            Snackbar.LENGTH_SHORT
+                        ).show()
                         findNavController().navigate(
                             com.wantox86.signpdf.R.id.action_pdfEditorFragment_to_pdfPreviewFragment,
                             bundleOf("filePath" to state.file.absolutePath)
@@ -249,16 +254,6 @@ class PdfEditorFragment : Fragment() {
         val layoutManager = binding.recyclerPdfPages.layoutManager as? LinearLayoutManager
         val index = layoutManager?.findFirstVisibleItemPosition() ?: 0
         return if (index < 0) 0 else index
-    }
-
-    // Cuma panggil updateVisiblePage() pas index-nya beneran ganti -- onScrolled bisa fire
-    // berkali-kali buat scroll kecil yang nggak mindahin currentPageIndex() sama sekali, dan
-    // manggil ulang tanpa guard ini nambah kerjaan coroutine yang nggak perlu tiap event scroll.
-    private fun notifyVisiblePageChanged() {
-        val index = currentPageIndex()
-        if (index == lastVisiblePageIndex) return
-        lastVisiblePageIndex = index
-        viewModel.updateVisiblePage(index)
     }
 
     private fun renderCurrentPageOverlays() {

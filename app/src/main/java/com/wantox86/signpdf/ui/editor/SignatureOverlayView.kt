@@ -69,8 +69,10 @@ class SignatureOverlayView @JvmOverloads constructor(
         override fun onScale(detector: ScaleGestureDetector): Boolean {
             val selected = selectedOverlay() ?: return false
             val factor = detector.scaleFactor
-            val newWidth = max(80f, selected.width * factor)
-            val newHeight = max(40f, selected.height * factor)
+            // Batas minimum resize -- sebelumnya 80x40px kegedean buat page yang di-render
+            // ~1080px lebar, nggak bisa diperkecil sampe wajar buat paraf kecil.
+            val newWidth = max(30f, selected.width * factor)
+            val newHeight = max(15f, selected.height * factor)
             // Anchor resize ke center overlay, bukan ke pojok kiri-atas -- sebelumnya x/y
             // dibiarin tetap pas width/height berubah, jadi box-nya "kabur" ngembang ke
             // kanan-bawah tiap discale alih-alih membesar/mengecil di tempat.

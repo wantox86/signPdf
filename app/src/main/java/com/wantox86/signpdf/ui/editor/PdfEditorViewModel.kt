@@ -17,12 +17,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.File
-import kotlin.math.abs
 
 sealed class ExportState {
     data object Idle : ExportState()
     data object Loading : ExportState()
-    data class Success(val file: File) : ExportState()
+    // overlayCount: diagnostic sementara buat nelusurin laporan "TTD nggak muncul di preview" --
+    // biar next test ketauan overlay-nya kebawa nggak sampe ke titik export.
+    data class Success(val file: File, val overlayCount: Int) : ExportState()
     data class Error(val message: String) : ExportState()
 }
 
@@ -64,54 +65,30 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
                 val fileName = uri.lastPathSegment ?: "document.pdf"
                 pdfDocument = PdfDocument(uri, fileName, pageCount)
                 _pages.value = List(pageCount) { null }
-                _isLoadingPages.value = true
-                updateVisiblePage(0)
+                renderAllPages()
             } catch (e: Exception) {
                 _loadError.value = e.message ?: context.getString(R.string.error_pdf_load)
             }
         }
     }
 
-    fun updateVisiblePage(currentIndex: Int) {
+    // Render semua halaman upfront pas dokumen dibuka, bukan lazy/windowed pas discroll --
+    // pendekatan lazy sebelumnya bikin halaman yang baru kelihatan pas discroll sempet nunjukin
+    // skeleton dulu sebelum bitmap-nya kelar dirender (async), yang keliatan kayak "TTD hilang
+    // muncul". PDF yang ditandatangan biasanya cuma sekian halaman (bukan ratusan), jadi trade-off
+    // pake lebih banyak memori upfront demi scroll yang mulus itu wajar buat use-case ini.
+    private fun renderAllPages() {
         val document = pdfDocument ?: return
         viewModelScope.launch {
+            _isLoadingPages.value = true
             val mutablePages = _pages.value.toMutableList()
-            if (mutablePages.isEmpty()) return@launch
-
-            val start = (currentIndex - 1).coerceAtLeast(0)
-            val end = (currentIndex + 1).coerceAtMost(mutablePages.lastIndex)
-            var changed = false
-
-            for (index in start..end) {
-                if (mutablePages[index] == null) {
-                    mutablePages[index] = pdfRepository.renderPage(document, index)
-                    changed = true
-                }
-            }
-
             for (index in mutablePages.indices) {
-                if (abs(index - currentIndex) > 2 && mutablePages[index] != null) {
-                    // Jangan recycle() manual: nggak ada jaminan ImageView yang lagi nampilin
-                    // bitmap ini udah selesai di-unbind/redraw duluan (adapter update dari
-                    // _pages.value baru diproses RecyclerView belakangan, async), jadi bisa race
-                    // -> "Canvas: trying to use a recycled bitmap" kalau sempat digambar ulang
-                    // pas bitmap-nya udah kepanggil recycle(). Cukup drop referensinya, biarin GC
-                    // yang bebasin memorinya begitu beneran nggak ada View yang megang lagi.
-                    mutablePages[index] = null
-                    changed = true
-                }
+                mutablePages[index] = pdfRepository.renderPage(document, index)
+                // Emit progresif per halaman (bukan nunggu semua kelar) biar halaman yang udah
+                // jadi langsung kelihatan, nggak nunggu dokumen 20 halaman kelar semua dulu.
+                _pages.value = mutablePages.toList()
             }
-
-            // Cuma emit kalau beneran ada yang berubah -- tiap emit di sini nyampe ke adapter
-            // dan bisa mancing rebind, jadi emit yang nggak perlu (mis. dipanggil ulang buat
-            // index yang udah fully-loaded) bikin kerja dua kali sia-sia.
-            if (changed) {
-                _pages.value = mutablePages
-            }
-            // Loading indicator cuma refleksiin window yang lagi dibutuhin (start..end), bukan
-            // seluruh dokumen -- halaman jauh yang sengaja di-unload (null) itu normal, bukan
-            // "masih loading", jadi jangan ikut dihitung di sini.
-            _isLoadingPages.value = (start..end).any { mutablePages[it] == null }
+            _isLoadingPages.value = false
         }
     }
 
@@ -119,7 +96,7 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
         val pageBitmap = _pages.value.getOrNull(pageIndex)
         val pageWidth = pageBitmap?.width?.toFloat() ?: 1080f
         val pageHeight = pageBitmap?.height?.toFloat() ?: 1528f
-        val defaultWidth = pageWidth * 0.30f
+        val defaultWidth = pageWidth * 0.18f
         val aspectRatio = if (bitmap.width > 0) bitmap.height.toFloat() / bitmap.width.toFloat() else 0.35f
         val defaultHeight = defaultWidth * aspectRatio
 
@@ -165,9 +142,10 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _exportState.value = ExportState.Loading
             try {
-                val (updatedDocument, outputFile) = exportPdfUseCase.execute(document, _overlays.value)
+                val overlaysToEmbed = _overlays.value
+                val (updatedDocument, outputFile) = exportPdfUseCase.execute(document, overlaysToEmbed)
                 pdfDocument = updatedDocument
-                _exportState.value = ExportState.Success(outputFile)
+                _exportState.value = ExportState.Success(outputFile, overlaysToEmbed.size)
             } catch (e: Exception) {
                 val reason = e.message ?: e.javaClass.simpleName
                 _exportState.value = ExportState.Error("${context.getString(R.string.error_export)}: $reason")
