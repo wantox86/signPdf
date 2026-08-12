@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary: deepened purple, more mature than a default Material purple -->
+    <color name="sp_primary">#5B2BE0</color>
+    <color name="sp_on_primary">#FFFFFF</color>
+    <color name="sp_primary_container">#EAE1FB</color>
+    <color name="sp_on_primary_container">#22105E</color>
+
+    <!-- Background / surface: warm light grey background, white surfaces -->
+    <color name="sp_background">#F7F7F8</color>
+    <color name="sp_on_background">#1C1B1F</color>
+    <color name="sp_surface">#FFFFFF</color>
+    <color name="sp_on_surface">#1C1B1F</color>
+    <color name="sp_surface_variant">#F0EFF2</color>
+    <color name="sp_on_surface_variant">#49454E</color>
+
+    <!-- Text -->
+    <color name="sp_text_primary">#1C1B1F</color>
+    <color name="sp_text_secondary">#5F5C66</color>
+
+    <!-- Border / outline -->
+    <color name="sp_outline">#E1DFE3</color>
+    <color name="sp_outline_variant">#CAC7CE</color>
+</resources>

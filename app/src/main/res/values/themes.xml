@@ -2,6 +2,40 @@
 <resources>
     <!-- Light-only (bukan DayNight): dokumen PDF selalu putih/hitam kayak kertas asli,
          ngikutin dark mode sistem bikin area transparan di render PDF jadi hitam dan teks
-         ketutupan. -->
-    <style name="Theme.SignPDF" parent="Theme.MaterialComponents.Light.NoActionBar" />
+         ketutupan. Tetep Light-only pas migrasi ke Material3 -- keputusan ini nggak berubah. -->
+    <style name="Theme.SignPDF" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/sp_primary</item>
+        <item name="colorOnPrimary">@color/sp_on_primary</item>
+        <item name="colorPrimaryContainer">@color/sp_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/sp_on_primary_container</item>
+        <item name="colorSurface">@color/sp_surface</item>
+        <item name="colorOnSurface">@color/sp_on_surface</item>
+        <item name="colorSurfaceVariant">@color/sp_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/sp_on_surface_variant</item>
+        <item name="colorOutline">@color/sp_outline</item>
+        <item name="colorOutlineVariant">@color/sp_outline_variant</item>
+        <item name="android:colorBackground">@color/sp_background</item>
+        <item name="materialButtonStyle">@style/Widget.SignPDF.Button</item>
+        <item name="shapeAppearanceCornerMedium">@style/ShapeAppearance.SignPDF.Medium</item>
+    </style>
+
+    <style name="ShapeAppearance.SignPDF.Medium" parent="ShapeAppearance.Material3.Corner.Medium">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/sp_corner_radius_medium</item>
+    </style>
+
+    <!-- Sentence case, bukan ALL CAPS ("Preview & Share", bukan "PREVIEW & SHARE") -->
+    <style name="Widget.SignPDF.Button" parent="Widget.Material3.Button">
+        <item name="android:textAllCaps">false</item>
+        <item name="cornerRadius">@dimen/sp_corner_radius_small</item>
+    </style>
+
+    <style name="Widget.SignPDF.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:textAllCaps">false</item>
+        <item name="cornerRadius">@dimen/sp_corner_radius_small</item>
+    </style>
+
+    <style name="Widget.SignPDF.Button.Text" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textAllCaps">false</item>
+    </style>
 </resources>

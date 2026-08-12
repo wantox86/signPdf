@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Corner radius scale -->
+    <dimen name="sp_corner_radius_small">12dp</dimen>
+    <dimen name="sp_corner_radius_medium">16dp</dimen>
+
+    <!-- Spacing scale -->
+    <dimen name="sp_spacing_xs">4dp</dimen>
+    <dimen name="sp_spacing_sm">8dp</dimen>
+    <dimen name="sp_spacing_md">16dp</dimen>
+    <dimen name="sp_spacing_lg">24dp</dimen>
+    <dimen name="sp_spacing_xl">32dp</dimen>
+
+    <!-- Minimum accessible touch target -->
+    <dimen name="sp_touch_target_min">48dp</dimen>
+
+    <!-- Elevation -->
+    <dimen name="sp_elevation_low">2dp</dimen>
+    <dimen name="sp_elevation_medium">4dp</dimen>
+</resources>
