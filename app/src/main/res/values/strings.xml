@@ -49,4 +49,16 @@
     <string name="status_authenticated">☁ %1$s</string>
     <string name="sync_button">Sync</string>
     <string name="logout_button">Log out</string>
+
+    <!-- Cloud signature sync: sync service -->
+    <string name="error_sync_not_logged_in">Log in first to sync</string>
+    <string name="error_sync_generic">Sync failed, please try again</string>
+    <string name="sync_state_syncing">Syncing…</string>
+    <string name="sync_state_synced">Synced</string>
+
+    <!-- Cloud signature sync: guest-to-login migration -->
+    <string name="migration_dialog_title">Upload your local signature?</string>
+    <string name="migration_dialog_message">You have a signature saved on this device that isn\'t in the cloud yet. Upload it now so it syncs to your other devices?</string>
+    <string name="migration_dialog_upload">Upload</string>
+    <string name="migration_dialog_skip">Not now</string>
 </resources>

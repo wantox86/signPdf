@@ -56,4 +56,31 @@ class SignatureRepository(private val context: Context) {
         val loaded = BitmapFactory.decodeFile(file.absolutePath, options) ?: return null
         return loaded.copy(Bitmap.Config.ARGB_8888, true)
     }
+
+    // --- Cloud sync additions below (SyncRepository only) ---------------------------------
+    // All three are thin: they reuse the existing save/file logic above rather than
+    // duplicating it, so Guest mode (which never calls any of them) stays byte-for-byte
+    // unchanged.
+
+    // Decodes a PNG downloaded from the backend and saves it exactly like a locally-drawn
+    // signature would be.
+    suspend fun saveBitmapFromSync(type: OverlayType, pngBytes: ByteArray) = withContext(Dispatchers.IO) {
+        val bitmap = BitmapFactory.decodeByteArray(pngBytes, 0, pngBytes.size)
+            ?: throw IllegalArgumentException("Invalid PNG data for $type")
+        saveBitmap(type, bitmap)
+    }
+
+    // Raw PNG bytes straight from disk (not re-encoded via Bitmap.compress) so what gets
+    // uploaded is byte-identical to what's stored locally.
+    suspend fun bitmapBytesFor(type: OverlayType): ByteArray? = withContext(Dispatchers.IO) {
+        val file = signatureFile(type)
+        if (!file.exists()) null else file.readBytes()
+    }
+
+    // Local file mtime, used by SyncRepository as a cheap "changed since last sync" signal
+    // without needing saveBitmap() to know anything about sync state.
+    suspend fun lastModifiedAt(type: OverlayType): Long? = withContext(Dispatchers.IO) {
+        val file = signatureFile(type)
+        if (!file.exists()) null else file.lastModified()
+    }
 }
