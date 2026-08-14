@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -15,6 +16,11 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // 10.0.2.2 = emulator's loopback to the host machine, where signPDF-Backend's
+        // docker-compose runs during local dev. Update this once the backend gets a stable
+        // public URL (e.g. behind the homelab's Cloudflare tunnel).
+        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8080/\"")
     }
 
     signingConfigs {
@@ -56,6 +62,7 @@ android {
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 }
 
@@ -74,6 +81,11 @@ dependencies {
     implementation(libs.coil)
     implementation(libs.pdfbox.android)
     implementation(libs.signature.pad)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
+    implementation(libs.okhttp)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.security.crypto)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

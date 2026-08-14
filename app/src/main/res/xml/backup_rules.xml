@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Legacy Auto Backup config (API < 31). Excludes the whole sharedpref domain: today
+     that's only TokenStore (session token, must never round-trip through backup/restore
+     onto a different device). -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="." />
+</full-backup-content>
