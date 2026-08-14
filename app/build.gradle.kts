@@ -64,6 +64,12 @@ android {
         viewBinding = true
         buildConfig = true
     }
+
+    testOptions {
+        // Robolectric needs the merged manifest/resources available to unit tests (e.g.
+        // getString() calls in the ViewModels/repositories under test).
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 dependencies {
@@ -88,6 +94,11 @@ dependencies {
     implementation(libs.androidx.security.crypto)
 
     testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }

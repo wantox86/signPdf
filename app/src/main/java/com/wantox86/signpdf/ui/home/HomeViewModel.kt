@@ -5,6 +5,8 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.wantox86.signpdf.SignPdfApplication
+import com.wantox86.signpdf.data.AuthRepository
+import com.wantox86.signpdf.data.SyncRepository
 import com.wantox86.signpdf.domain.model.AuthState
 import com.wantox86.signpdf.domain.model.OverlayType
 import com.wantox86.signpdf.domain.model.SyncState
@@ -14,11 +16,14 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class HomeViewModel(app: Application) : AndroidViewModel(app) {
-    private val signPdfApplication = app as SignPdfApplication
-    private val authRepository = signPdfApplication.authRepository
-    private val syncRepository = signPdfApplication.syncRepository
-
+class HomeViewModel @JvmOverloads constructor(
+    app: Application,
+    // Same @JvmOverloads seam as LoginViewModel: defaults to the app-wide singletons in
+    // production (by viewModels() still finds the single-Application-arg constructor), tests
+    // pass fakes/mocks directly.
+    private val authRepository: AuthRepository = (app as SignPdfApplication).authRepository,
+    private val syncRepository: SyncRepository = (app as SignPdfApplication).syncRepository,
+) : AndroidViewModel(app) {
     val authState: StateFlow<AuthState> = authRepository.authState
     val syncState: StateFlow<SyncState> = syncRepository.syncState
 
