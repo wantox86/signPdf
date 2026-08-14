@@ -7,7 +7,7 @@ import androidx.security.crypto.MasterKey
 // Session credentials only (token/expiry/username) -- deliberately separate from
 // SignatureMetadataStore (plain SharedPreferences, phase 6), which holds non-secret sync
 // bookkeeping that's fine to leave un-encrypted and backed up.
-class TokenStore(context: Context) {
+class TokenStore(context: Context) : TokenStorage {
     private val masterKey = MasterKey.Builder(context)
         .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
         .build()
@@ -20,7 +20,7 @@ class TokenStore(context: Context) {
         EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
     )
 
-    fun save(token: String, expiresAt: String, username: String) {
+    override fun save(token: String, expiresAt: String, username: String) {
         prefs.edit()
             .putString(KEY_TOKEN, token)
             .putString(KEY_EXPIRES_AT, expiresAt)
@@ -28,13 +28,13 @@ class TokenStore(context: Context) {
             .apply()
     }
 
-    fun token(): String? = prefs.getString(KEY_TOKEN, null)
+    override fun token(): String? = prefs.getString(KEY_TOKEN, null)
 
-    fun expiresAt(): String? = prefs.getString(KEY_EXPIRES_AT, null)
+    override fun expiresAt(): String? = prefs.getString(KEY_EXPIRES_AT, null)
 
-    fun username(): String? = prefs.getString(KEY_USERNAME, null)
+    override fun username(): String? = prefs.getString(KEY_USERNAME, null)
 
-    fun clear() {
+    override fun clear() {
         prefs.edit().clear().apply()
     }
 

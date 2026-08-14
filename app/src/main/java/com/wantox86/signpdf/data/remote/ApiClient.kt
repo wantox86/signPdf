@@ -1,7 +1,7 @@
 package com.wantox86.signpdf.data.remote
 
 import com.wantox86.signpdf.BuildConfig
-import com.wantox86.signpdf.data.local.TokenStore
+import com.wantox86.signpdf.data.local.TokenStorage
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -13,7 +13,7 @@ object ApiClient {
         ignoreUnknownKeys = true
     }
 
-    fun create(tokenStore: TokenStore): SignPdfApiService {
+    fun create(tokenStore: TokenStorage): SignPdfApiService {
         val okHttpClient = OkHttpClient.Builder()
             .addInterceptor(AuthInterceptor(tokenStore))
             .build()

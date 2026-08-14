@@ -2,7 +2,6 @@ package com.wantox86.signpdf.ui.home
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
-import app.cash.turbine.test
 import com.wantox86.signpdf.MainDispatcherRule
 import com.wantox86.signpdf.data.AuthRepository
 import com.wantox86.signpdf.data.SyncRepository
@@ -75,9 +74,7 @@ class HomeViewModelTest {
 
         authState.value = AuthState.Authenticated("alice")
 
-        viewModel.migrationPrompt.test {
-            assertEquals(listOf(OverlayType.TTD), awaitItem())
-        }
+        assertEquals(listOf(OverlayType.TTD), viewModel.migrationPrompt.value)
         coVerify(exactly = 0) { syncRepository.sync() }
     }
 

@@ -3,7 +3,7 @@ package com.wantox86.signpdf.data
 import android.content.Context
 import com.wantox86.signpdf.R
 import com.wantox86.signpdf.data.local.SignatureMetadataStore
-import com.wantox86.signpdf.data.local.TokenStore
+import com.wantox86.signpdf.data.local.TokenStorage
 import com.wantox86.signpdf.data.remote.SignPdfApiService
 import com.wantox86.signpdf.data.remote.dto.CreateSignatureRequest
 import com.wantox86.signpdf.data.remote.dto.ErrorEnvelope
@@ -33,7 +33,7 @@ class SyncRepository(
     private val signatureRepository: SignatureRepository,
     private val metadataStore: SignatureMetadataStore,
     private val authRepository: AuthRepository,
-    private val tokenStore: TokenStore,
+    private val tokenStore: TokenStorage,
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 

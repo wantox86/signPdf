@@ -4,8 +4,9 @@ import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.Color
 import androidx.test.core.app.ApplicationProvider
+import com.wantox86.signpdf.data.local.FakeTokenStorage
 import com.wantox86.signpdf.data.local.SignatureMetadataStore
-import com.wantox86.signpdf.data.local.TokenStore
+import com.wantox86.signpdf.data.local.TokenStorage
 import com.wantox86.signpdf.data.remote.FakeSignPdfApiService
 import com.wantox86.signpdf.data.remote.dto.SignatureDto
 import com.wantox86.signpdf.domain.model.OverlayType
@@ -29,7 +30,7 @@ class SyncRepositoryTest {
     private lateinit var fakeApi: FakeSignPdfApiService
     private lateinit var signatureRepository: SignatureRepository
     private lateinit var metadataStore: SignatureMetadataStore
-    private lateinit var tokenStore: TokenStore
+    private lateinit var tokenStore: TokenStorage
     private lateinit var authRepository: AuthRepository
     private lateinit var syncRepository: SyncRepository
 
@@ -39,7 +40,7 @@ class SyncRepositoryTest {
         fakeApi = FakeSignPdfApiService()
         signatureRepository = SignatureRepository(context)
         metadataStore = SignatureMetadataStore(context)
-        tokenStore = TokenStore(context)
+        tokenStore = FakeTokenStorage()
         // A far-future expiry so AuthRepository's own "is my stored session expired"
         // check (evaluated once at construction time) never interferes with these tests.
         tokenStore.save("fake-token", "2099-01-01T00:00:00Z", "alice")

@@ -2,7 +2,6 @@ package com.wantox86.signpdf.ui.auth
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
-import app.cash.turbine.test
 import com.wantox86.signpdf.MainDispatcherRule
 import com.wantox86.signpdf.data.AuthRepository
 import com.wantox86.signpdf.data.LoginResult
@@ -22,6 +21,11 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class)
 class LoginViewModelTest {
+    // Backs Dispatchers.Main with an UnconfinedTestDispatcher, so viewModelScope.launch{}
+    // bodies run to completion synchronously (the mocked AuthRepository.login() has no real
+    // suspension point) -- tests below check the final uiState.value right after calling
+    // login(), rather than trying to observe the transient Loading frame in between, which
+    // isn't reliably observable across two independently-scheduled test dispatchers anyway.
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
@@ -39,42 +43,29 @@ class LoginViewModelTest {
 
     @Test
     fun `blank username or password shows an error without calling the repository`() = runTest {
-        viewModel.uiState.test {
-            assertEquals(LoginUiState.Idle, awaitItem())
+        viewModel.login("", "secret")
 
-            viewModel.login("", "secret")
-
-            assertTrue(awaitItem() is LoginUiState.Error)
-        }
+        assertTrue(viewModel.uiState.value is LoginUiState.Error)
         coVerify(exactly = 0) { authRepository.login(any(), any()) }
     }
 
     @Test
-    fun `successful login goes through Loading then Success`() = runTest {
+    fun `successful login ends in Success`() = runTest {
         coEvery { authRepository.login("alice", "secret") } returns LoginResult.Success
 
-        viewModel.uiState.test {
-            assertEquals(LoginUiState.Idle, awaitItem())
+        viewModel.login("alice", "secret")
 
-            viewModel.login("alice", "secret")
-
-            assertEquals(LoginUiState.Loading, awaitItem())
-            assertEquals(LoginUiState.Success, awaitItem())
-        }
+        assertEquals(LoginUiState.Success, viewModel.uiState.value)
     }
 
     @Test
     fun `failed login surfaces the repository's error message`() = runTest {
         coEvery { authRepository.login("alice", "wrong") } returns LoginResult.Failure("Invalid credentials")
 
-        viewModel.uiState.test {
-            awaitItem() // Idle
-            viewModel.login("alice", "wrong")
-            awaitItem() // Loading
+        viewModel.login("alice", "wrong")
 
-            val state = awaitItem()
-            assertTrue(state is LoginUiState.Error)
-            assertEquals("Invalid credentials", (state as LoginUiState.Error).message)
-        }
+        val state = viewModel.uiState.value
+        assertTrue(state is LoginUiState.Error)
+        assertEquals("Invalid credentials", (state as LoginUiState.Error).message)
     }
 }

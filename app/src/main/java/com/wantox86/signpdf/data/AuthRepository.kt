@@ -2,7 +2,7 @@ package com.wantox86.signpdf.data
 
 import android.content.Context
 import com.wantox86.signpdf.R
-import com.wantox86.signpdf.data.local.TokenStore
+import com.wantox86.signpdf.data.local.TokenStorage
 import com.wantox86.signpdf.data.remote.SignPdfApiService
 import com.wantox86.signpdf.data.remote.dto.ErrorEnvelope
 import com.wantox86.signpdf.data.remote.dto.LoginRequest
@@ -25,7 +25,7 @@ sealed class LoginResult {
 class AuthRepository(
     private val context: Context,
     private val apiService: SignPdfApiService,
-    private val tokenStore: TokenStore,
+    private val tokenStore: TokenStorage,
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
