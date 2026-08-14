@@ -39,6 +39,79 @@
         </LinearLayout>
     </com.google.android.material.appbar.MaterialToolbar>
 
+    <!-- Cloud sync status bar: Guest / "cloud username", plus Sync + Log out (or a Login
+         button for Guest). Visibility of the two button groups is toggled in code based on
+         AuthState, never both at once. -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/card_sync_status"
+        style="@style/Widget.Material3.CardView.Outlined"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/sp_spacing_md"
+        android:layout_marginTop="@dimen/sp_spacing_sm"
+        app:cardBackgroundColor="@color/sp_surface"
+        app:strokeColor="@color/sp_outline"
+        app:layout_constraintTop_toBottomOf="@id/toolbar_home"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="@dimen/sp_spacing_md"
+            android:paddingVertical="@dimen/sp_spacing_sm">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tv_auth_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceLabelLarge"
+                    android:textColor="@color/sp_text_primary"
+                    tools:text="Guest" />
+
+                <TextView
+                    android:id="@+id/tv_sync_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceLabelSmall"
+                    android:textColor="@color/sp_text_secondary"
+                    android:visibility="gone"
+                    tools:text="Synced" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btn_login_status"
+                style="@style/Widget.SignPDF.Button.Text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/login_button" />
+
+            <Button
+                android:id="@+id/btn_sync_status"
+                style="@style/Widget.SignPDF.Button.Text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/sync_button"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/btn_logout_status"
+                style="@style/Widget.SignPDF.Button.Text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/logout_button"
+                android:visibility="gone" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
     <!-- Centers the hero illustration + headline + description as a group within the space
          between the toolbar and the primary button, so this layer never has to fight the
          button/microcopy anchored to the bottom. -->
@@ -49,7 +122,7 @@
         android:orientation="vertical"
         android:gravity="center"
         android:paddingHorizontal="@dimen/sp_spacing_xl"
-        app:layout_constraintTop_toBottomOf="@id/toolbar_home"
+        app:layout_constraintTop_toBottomOf="@id/card_sync_status"
         app:layout_constraintBottom_toTopOf="@id/btn_open_pdf"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">

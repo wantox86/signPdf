@@ -36,6 +36,7 @@
     <!-- Cloud signature sync: auth -->
     <string name="error_login_network">Can\'t reach the server, check your internet connection</string>
     <string name="error_login_generic">Login failed, please try again</string>
+    <string name="error_session_expired">Your session expired, please log in again</string>
     <string name="login_title">Log in</string>
     <string name="login_description">Sync your signature and initial across devices. Guests can keep using SignPDF fully offline without logging in.</string>
     <string name="login_username_hint">Username</string>

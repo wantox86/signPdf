@@ -8,7 +8,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import coil.ImageLoader
 import coil.request.ImageRequest
-import com.wantox86.signpdf.data.SignatureRepository
+import com.wantox86.signpdf.SignPdfApplication
 import com.wantox86.signpdf.domain.model.OverlayType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +16,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class SignatureViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = SignatureRepository(application.applicationContext)
+    // Shared app-wide instance (see SignPdfApplication) -- not `new`'d here, so a Sync
+    // triggered from Home (a different ViewModel) reuses the same in-memory StateFlows this
+    // screen observes, instead of drifting out of sync until the next process restart.
+    private val repository = (application as SignPdfApplication).signatureRepository
 
     val ttdBitmap: StateFlow<Bitmap?> = repository.ttdBitmap
     val parafBitmap: StateFlow<Bitmap?> = repository.parafBitmap
