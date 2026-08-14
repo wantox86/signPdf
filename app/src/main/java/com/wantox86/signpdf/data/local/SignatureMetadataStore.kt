@@ -3,6 +3,8 @@ package com.wantox86.signpdf.data.local
 import android.content.Context
 import com.wantox86.signpdf.domain.model.OverlayType
 import com.wantox86.signpdf.domain.model.SignatureSlotMeta
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 // Non-secret sync bookkeeping (remote id / updated_at / dirty flag per slot) -- plain
