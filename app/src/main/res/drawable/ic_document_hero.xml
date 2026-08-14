@@ -1,0 +1,41 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+
+    <!-- Soft circular badge background -->
+    <path
+        android:fillColor="@color/sp_primary_container"
+        android:pathData="M60,0A60,60 0,0 1,60 120A60,60 0,0 1,60 0Z" />
+
+    <!-- Document body -->
+    <path
+        android:fillColor="@color/sp_surface"
+        android:strokeColor="@color/sp_primary"
+        android:strokeWidth="2"
+        android:pathData="M38,28 L70,28 L84,42 L84,94 L38,94 Z" />
+
+    <!-- Folded corner -->
+    <path
+        android:fillColor="@color/sp_primary_container"
+        android:strokeColor="@color/sp_primary"
+        android:strokeWidth="2"
+        android:pathData="M70,28 L70,42 L84,42 Z" />
+
+    <!-- Signature squiggle -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="@color/sp_primary"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M46,74 C50,66 54,66 56,72 C58,78 62,78 64,70 C66,64 70,64 74,70" />
+
+    <!-- Signature underline -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="@color/sp_outline_variant"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M46,80 L76,80" />
+</vector>

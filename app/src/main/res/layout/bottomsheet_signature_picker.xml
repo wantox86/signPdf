@@ -1,36 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="@color/sp_surface"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:paddingHorizontal="@dimen/sp_spacing_lg"
+    android:paddingTop="@dimen/sp_spacing_sm"
+    android:paddingBottom="@dimen/sp_spacing_xl">
+
+    <View
+        android:layout_width="32dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="@dimen/sp_spacing_md"
+        android:background="@drawable/bg_drag_handle" />
 
     <TextView
         android:id="@+id/tv_label_type"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textStyle="bold"
-        android:textSize="16sp"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginBottom="@dimen/sp_spacing_md"
+        android:textAppearance="?attr/textAppearanceTitleMedium"
+        android:textColor="@color/sp_text_primary"
+        tools:text="Sign" />
 
     <Button
         android:id="@+id/btn_draw_on_screen"
+        style="@style/Widget.SignPDF.Button.Outlined"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/draw_on_screen" />
+        android:layout_height="56dp"
+        android:text="@string/draw_on_screen"
+        android:textAppearance="?attr/textAppearanceTitleMedium"
+        app:icon="@drawable/ic_draw"
+        app:iconGravity="textStart"
+        app:iconTint="@color/sp_primary" />
 
     <Button
         android:id="@+id/btn_use_saved"
+        style="@style/Widget.SignPDF.Button.Outlined"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="@string/use_saved_signature" />
+        android:layout_height="56dp"
+        android:layout_marginTop="@dimen/sp_spacing_sm"
+        android:text="@string/use_saved_signature"
+        android:textAppearance="?attr/textAppearanceTitleMedium"
+        app:icon="@drawable/ic_saved_signature"
+        app:iconGravity="textStart"
+        app:iconTint="@color/sp_primary" />
 
     <Button
         android:id="@+id/btn_import_image"
+        style="@style/Widget.SignPDF.Button.Outlined"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="@string/import_image" />
+        android:layout_height="56dp"
+        android:layout_marginTop="@dimen/sp_spacing_sm"
+        android:text="@string/import_image"
+        android:textAppearance="?attr/textAppearanceTitleMedium"
+        app:icon="@drawable/ic_import_image"
+        app:iconGravity="textStart"
+        app:iconTint="@color/sp_primary" />
 
 </LinearLayout>

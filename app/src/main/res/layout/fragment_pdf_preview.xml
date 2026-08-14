@@ -4,7 +4,20 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/sp_background"
     tools:context=".ui.preview.PdfPreviewFragment">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar_preview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/sp_surface"
+        android:minHeight="?attr/actionBarSize"
+        app:title="@string/preview_title"
+        app:titleTextColor="@color/sp_text_primary"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_preview_pages"
@@ -13,7 +26,7 @@
         android:clipToPadding="false"
         android:padding="8dp"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/toolbar_preview"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/toolbar_preview_actions"
@@ -23,7 +36,7 @@
         android:id="@+id/progress_preview_loading"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toTopOf="@id/recycler_preview_pages"
         app:layout_constraintBottom_toBottomOf="@id/recycler_preview_pages"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -33,8 +46,11 @@
         android:id="@+id/toolbar_preview_actions"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@color/sp_surface"
+        android:elevation="@dimen/sp_elevation_medium"
         android:orientation="horizontal"
-        android:padding="16dp"
+        android:paddingHorizontal="@dimen/sp_spacing_lg"
+        android:paddingVertical="@dimen/sp_spacing_md"
         android:gravity="center"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -42,19 +58,23 @@
 
         <Button
             android:id="@+id/btn_back_to_editor"
+            style="@style/Widget.SignPDF.Button.Outlined"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="56dp"
             android:layout_weight="1"
-            android:layout_marginEnd="8dp"
-            android:text="@string/back_to_editor" />
+            android:layout_marginEnd="@dimen/sp_spacing_sm"
+            android:text="@string/back_to_editor"
+            android:textAppearance="?attr/textAppearanceTitleMedium" />
 
         <Button
             android:id="@+id/btn_share"
+            style="@style/Widget.SignPDF.Button"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="56dp"
             android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:text="@string/share" />
+            android:layout_marginStart="@dimen/sp_spacing_sm"
+            android:text="@string/share"
+            android:textAppearance="?attr/textAppearanceTitleMedium" />
 
     </LinearLayout>
 
