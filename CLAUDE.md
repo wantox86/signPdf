@@ -218,3 +218,4 @@ The exported PDF's file name is resolved via a `ContentResolver` query for the r
 - `fixing-signing.md` (repository root) — an in-depth analysis and debugging history of the overlay-placement bug (read this before modifying `SignatureOverlayView`, `PdfPageAdapter`, or coordinate-conversion code again).
 - `.github/copilot-instructions.md` — instructions for GitHub Copilot; should be kept consistent with this file whenever the architecture changes.
 - `README.md` — a short overview for new readers and contributors.
+- `~/Documents/Github/signPDF-Backend/CLAUDE.md` (separate repo) — the Cloud Signature Sync backend's own current-state doc (API surface, auth scheme, dev deployment). Read together with decision #8 above when working across both repos.
