@@ -17,12 +17,10 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // 10.0.2.2 = emulator's loopback to the host machine, where signPDF-Backend's
-        // docker-compose runs during local dev. Port 8090, not the container's default 8080
-        // -- host port 8080 is already taken by monthly-journal-api on the Mac Mini this runs
-        // on (see .env's HTTP_PORT). Update this once the backend gets a stable public URL
-        // (e.g. behind the homelab's Cloudflare tunnel).
-        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8090/\"")
+        // Public URL behind the homelab's Cloudflare tunnel (mac-mini tunnel ->
+        // localhost:8090, where signPDF-Backend's docker-compose runs) -- works from a real
+        // device or emulator alike, no host-loopback IP needed.
+        buildConfigField("String", "API_BASE_URL", "\"https://signpdf-backend.quezacolt.my.id/\"")
     }
 
     signingConfigs {
