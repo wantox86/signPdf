@@ -12,7 +12,16 @@
         <action
             android:id="@+id/action_homeFragment_to_pdfEditorFragment"
             app:destination="@id/pdfEditorFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_loginFragment"
+            app:destination="@id/loginFragment" />
     </fragment>
+
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.wantox86.signpdf.ui.auth.LoginFragment"
+        android:label="@string/login_title"
+        tools:layout="@layout/fragment_login" />
 
     <fragment
         android:id="@+id/pdfEditorFragment"

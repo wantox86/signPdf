@@ -45,6 +45,14 @@ material = "1.12.0"
 constraintlayout = "2.1.4"
 agp = "8.3.2"
 kotlin = "1.9.23"
+
+// Cloud Signature Sync (feature/cloud-signature-sync branch, not yet merged to main)
+retrofit = "2.11.0"             // + converter-kotlinx-serialization
+okhttp = "4.12.0"
+kotlinxSerialization = "1.6.3"
+securityCrypto = "1.1.0-alpha06" // androidx.security:security-crypto
+mockk = "1.13.11"                // test-only
+robolectric = "4.13"             // test-only
 ```
 
 **No Hilt, no DI framework.** It was in the original plan (`@HiltAndroidApp`, `AppModule`,
@@ -59,17 +67,27 @@ the dependency graph genuinely outgrows manual wiring.
 
 ```
 app/src/main/java/com/wantox86/signpdf/
-├── SignPdfApplication.kt        # PDFBoxResourceLoader.init() + CrashHandler.install()
+├── SignPdfApplication.kt        # PDFBoxResourceLoader.init() + CrashHandler.install(); also hosts
+│                                 # app-wide singletons for cloud sync (tokenStore, signatureRepository,
+│                                 # authRepository, syncRepository) -- see "Cloud Signature Sync" below
 ├── CrashHandler.kt              # global crash handler, writes stack trace, shown as a
 │                                 # selectable dialog on next launch (see MainActivity)
 ├── MainActivity.kt              # single activity, hosts NavController, handles ACTION_VIEW
 ├── data/
 │   ├── PdfRepository.kt
-│   └── SignatureRepository.kt   # persists saved TTD/PARAF bitmaps to filesDir/signatures/*.png
+│   ├── SignatureRepository.kt   # persists saved TTD/PARAF bitmaps to filesDir/signatures/*.png;
+│   │                             # + saveBitmapFromSync/bitmapBytesFor/lastModifiedAt (cloud sync only)
+│   ├── AuthRepository.kt        # login/logout/session-expiry; exposes StateFlow<AuthState>
+│   ├── SyncRepository.kt        # client-side sync algorithm (see "Cloud Signature Sync" below)
+│   ├── local/                   # TokenStorage (interface), TokenStore (impl), SignatureMetadataStore
+│   └── remote/                  # ApiClient, AuthInterceptor, SignPdfApiService, dto/
 ├── domain/
 │   ├── model/
 │   │   ├── PdfDocument.kt
-│   │   └── SignatureOverlay.kt  # id, type, bitmap, pageIndex, x/y/width/height, createdAt
+│   │   ├── SignatureOverlay.kt  # id, type, bitmap, pageIndex, x/y/width/height, createdAt
+│   │   ├── AuthState.kt         # sealed: Guest / Authenticated(username)
+│   │   ├── SyncState.kt         # sealed: Idle / Syncing / Synced(at) / Failed(message)
+│   │   └── SignatureSlotMeta.kt # per-slot cloud sync bookkeeping
 │   ├── usecase/
 │   │   ├── RenderPdfPageUseCase.kt
 │   │   ├── EmbedSignatureToPdfUseCase.kt
@@ -77,13 +95,17 @@ app/src/main/java/com/wantox86/signpdf/
 │   └── util/
 │       └── PdfCoordinateConverter.kt   # pure math, has a unit test
 └── ui/
-    ├── home/
+    ├── home/            # HomeFragment/HomeViewModel -- includes the cloud-sync status bar
+    ├── auth/             # LoginFragment, LoginViewModel
     ├── editor/         # PdfEditorFragment, PdfEditorViewModel, PdfPageAdapter, SignatureOverlayView, ZoomableContainer
     ├── signature/       # SignatureCanvasFragment, SignaturePickerBottomSheet, SignatureViewModel
     ├── preview/         # PdfPreviewFragment, PdfPreviewViewModel
     └── share/           # ShareHelper
 
-app/src/test/java/.../domain/util/PdfCoordinateConverterTest.kt   # only unit test in the repo
+app/src/test/java/.../domain/util/PdfCoordinateConverterTest.kt   # PDF coordinate math
+app/src/test/java/.../ (feature/cloud-signature-sync branch)      # SyncRepositoryTest, SignatureMetadataStoreTest,
+                                                                    # LoginViewModelTest, HomeViewModelTest,
+                                                                    # MainDispatcherRule, FakeTokenStorage, FakeSignPdfApiService
 ```
 
 There is no `SignatureSource.kt` (planned early, never used, deleted) and no `di/AppModule.kt`
@@ -223,21 +245,61 @@ Also: `uri.lastPathSegment` is **not** a real file name for `content://` URIs fr
 picker (it's the provider's internal document ID). Resolve the real display name via
 `ContentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), ...)`.
 
+### 7. Cloud Signature Sync — `feature/cloud-signature-sync` branch, not yet merged
+
+Optional login syncs the user's one TTD + one PARAF signature to a separate backend
+(`signPDF-Backend`, Go + MySQL, own repo) via a manual Sync button; Guest mode is fully offline
+and unchanged (zero network calls). Dev backend: `BuildConfig.API_BASE_URL` points at
+`https://signpdf-backend.quezacolt.my.id/` (homelab Cloudflare tunnel -> docker-compose on
+`localhost:8090`).
+
+- **`SignPdfApplication` hosts app-wide singletons** (`tokenStore`, `signatureRepository`,
+  `authRepository`, `syncRepository`) — the *only* exception to "every ViewModel `new`s its own
+  dependencies" (rule at the top of this file). Reason: these hold genuinely global state (one
+  login session, one pair of signature files); independently-constructed repository instances
+  would each carry their own `StateFlow`, so e.g. a Sync from `HomeViewModel` would update a
+  `SignatureRepository` instance that `SignatureViewModel` elsewhere never observes.
+- **`LoginViewModel`/`HomeViewModel` use a `@JvmOverloads` constructor** with the repository as a
+  default-value parameter (`private val authRepository: AuthRepository = (app as
+  SignPdfApplication).authRepository`). This is a testing seam, not a style choice — without
+  `@JvmOverloads`, `by viewModels()`'s reflection-based factory (which requires an exact
+  `(Application::class.java)` constructor) breaks in production. Tests call the multi-arg
+  constructor directly with MockK mocks.
+- **`AuthRepository`/`SyncRepository`/`AuthInterceptor`/`ApiClient` depend on the `TokenStorage`
+  interface, not concrete `TokenStore`** — `TokenStore` wraps `EncryptedSharedPreferences`, which
+  needs Android Keystore (unavailable under Robolectric/JVM tests). Tests use `FakeTokenStorage`.
+  `TokenStore` itself has no unit test for this reason.
+- **`SyncRepository`'s "dirty" check is inferred from file mtime**
+  (`SignatureRepository.lastModifiedAt()` vs `SignatureSlotMeta.localFileModifiedAtMillis`), not
+  an explicit flag threaded through `SignatureRepository.saveBitmap()` — deliberate, to keep the
+  existing signature-drawing flow (rule 1's overlay code has nothing to do with this, but
+  `SignatureViewModel` → `SignatureRepository.saveBitmap()` is the relevant untouched path) free
+  of any sync-awareness.
+- A `401`/`SESSION_EXPIRED` anywhere calls `AuthRepository.handleSessionExpired()` (clears local
+  session, flips to Guest) — it never touches `SignatureRepository`/`SignatureMetadataStore`, so
+  an expired session never interrupts an in-progress signing.
+
 ---
 
 ## Manifest / Permissions
 
 - `READ_EXTERNAL_STORAGE` (maxSdk 32) + `READ_MEDIA_IMAGES`. No `WRITE_EXTERNAL_STORAGE` — output
   is saved to `context.filesDir` only.
+- `INTERNET` — added for Cloud Signature Sync (rule 7); Guest mode never triggers a network call.
 - `MainActivity`: `launchMode="singleTask"`, two intent-filters (`MAIN`/`LAUNCHER` and
   `ACTION_VIEW` + `mimeType="application/pdf"` for Open With).
 - `FileProvider` at `${applicationId}.fileprovider`, paths in `res/xml/file_paths.xml`.
 - `android:icon` / `android:roundIcon` point to `@mipmap/ic_launcher` /
   `@mipmap/ic_launcher_round` (generated at 5 densities from the app icon artwork).
-- Theme (`res/values/themes.xml`) is **`Theme.MaterialComponents.Light.NoActionBar`**, not
-  `DayNight`. Rendered PDF bitmaps have transparent backgrounds where there's no ink; under dark
-  mode that transparency let the dark window background show through as black, hiding dark text.
-  Documents should always render on white regardless of the device's system theme.
+- `android:fullBackupContent` / `android:dataExtractionRules` point at
+  `res/xml/{backup_rules,data_extraction_rules}.xml`, excluding the entire `sharedpref` domain
+  from Auto Backup/device-transfer (the session token must never round-trip through either).
+- Theme (`res/values/themes.xml`) is **`Theme.SignPDF`, extending `Theme.Material3.Light.NoActionBar`**
+  (migrated from the original `Theme.MaterialComponents.Light.NoActionBar` during a full Material 3
+  UI revamp). Still Light-only, not `DayNight`: rendered PDF bitmaps have transparent backgrounds
+  where there's no ink; under dark mode that transparency let the dark window background show
+  through as black, hiding dark text. Documents should always render on white regardless of the
+  device's system theme.
 
 ---
 
@@ -260,7 +322,11 @@ real secret.
 
 - Pinch-to-zoom max scale is capped at 3x (see rule 5) — a hard limit tied to the fixed 1080px render width.
 - Not tested on tablets/large screens or landscape device orientation.
-- Only one unit test exists (`PdfCoordinateConverterTest`); no instrumented (`androidTest`) tests.
+- No instrumented (`androidTest`) tests — `androidTest/` is an empty skeleton. JVM unit tests cover
+  `PdfCoordinateConverter` and, on `feature/cloud-signature-sync`, the cloud-sync layer.
+- `TokenStore`'s real `EncryptedSharedPreferences`/Android Keystore behavior is untested (see rule 7) —
+  no emulator/device available in this dev environment for an instrumented test.
+- Cloud Signature Sync (rule 7) is complete and CI-green but not yet merged into `main`/`release/**`.
 
 ## Related Docs
 

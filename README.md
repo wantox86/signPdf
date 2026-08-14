@@ -10,6 +10,7 @@ An Android application for opening, digitally signing, and sharing PDF documents
 - **Undo/redo** per action (add, move, resize, delete)
 - **Preview** the final result before sharing, auto-scrolling to the first signed page
 - **Share** to other applications via the standard Android share sheet
+- **Cloud Signature Sync** *(in progress, branch `feature/cloud-signature-sync`, not yet merged)*: optionally log in to sync your signature/initial to [`signPDF-Backend`](https://github.com/wantox86/signPDF-Backend) and reuse them on another device via a manual Sync button. Fully optional — **Guest mode is unchanged and makes zero network calls.**
 
 ## Tech Stack
 
@@ -20,8 +21,10 @@ An Android application for opening, digitally signing, and sharing PDF documents
 | Signature canvas | [`com.github.gcacace:signature-pad`](https://github.com/gcacace/android-signaturepad) |
 | Image loading | [`io.coil-kt:coil`](https://coil-kt.github.io/coil/) |
 | Navigation | AndroidX Navigation Component (single-activity) |
-| UI | ViewBinding + ConstraintLayout (no Jetpack Compose) |
+| UI | ViewBinding + ConstraintLayout + Material 3 (no Jetpack Compose) |
 | Asynchrony | Kotlin Coroutines + Flow |
+| Networking (cloud sync) | Retrofit2 + OkHttp + kotlinx.serialization |
+| Secure storage (cloud sync) | `androidx.security:security-crypto` (EncryptedSharedPreferences) |
 | Architecture | MVVM + UseCase layer (no dependency-injection framework — see notes below) |
 
 Minimum SDK 26 (Android 8.0), target and compile SDK 34.
@@ -45,16 +48,19 @@ The debug keystore used for signing is committed to the repository (`app/debug.k
 
 ```
 app/src/main/java/com/wantox86/signpdf/
-├── SignPdfApplication.kt        # initializes PDFBoxResourceLoader and the global crash handler
+├── SignPdfApplication.kt        # initializes PDFBoxResourceLoader/crash handler; hosts cloud-sync singletons
 ├── CrashHandler.kt              # catches crashes, shows the last stack trace in a copyable dialog on next launch
 ├── MainActivity.kt              # single activity, hosts the NavController, handles "Open With" intents
-├── data/                        # repositories (PdfRepository, SignatureRepository)
+├── data/                        # repositories: PdfRepository, SignatureRepository, AuthRepository,
+│                                 # SyncRepository, plus local/ (TokenStore, SignatureMetadataStore) and
+│                                 # remote/ (Retrofit service + DTOs for signPDF-Backend)
 ├── domain/
-│   ├── model/                   # PdfDocument, SignatureOverlay
+│   ├── model/                   # PdfDocument, SignatureOverlay, AuthState, SyncState, SignatureSlotMeta
 │   ├── usecase/                 # RenderPdfPageUseCase, EmbedSignatureToPdfUseCase, ExportPdfUseCase
 │   └── util/                    # PdfCoordinateConverter (with unit tests)
 └── ui/
-    ├── home/                    # HomeFragment — entry point, opens the file picker
+    ├── home/                    # HomeFragment — entry point, opens the file picker, cloud-sync status bar
+    ├── auth/                    # LoginFragment — optional cloud login
     ├── editor/                  # PdfEditorFragment — main screen: viewer + Sign/Initial overlays
     ├── signature/               # SignatureCanvasFragment, SignaturePickerBottomSheet
     ├── preview/                 # PdfPreviewFragment — review the result before sharing
@@ -73,7 +79,8 @@ app/src/main/java/com/wantox86/signpdf/
 ## Known Limitations
 
 - Not tested on tablets, large screens, or landscape device orientation.
-- No instrumented (`androidTest`) tests exist yet — only a unit test for `PdfCoordinateConverter`.
+- No instrumented (`androidTest`) tests exist yet — JVM unit tests cover `PdfCoordinateConverter` and, on the `feature/cloud-signature-sync` branch, the cloud-sync layer.
+- Cloud Signature Sync is complete and CI-green but not yet merged from `feature/cloud-signature-sync` into `main`/`release/**`.
 
 ## License
 

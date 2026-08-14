@@ -32,4 +32,34 @@
     <string name="error_preview_file_not_found">Signed PDF file not found</string>
     <string name="share_via">Share PDF via</string>
     <string name="crash_dialog_title">App crashed last time</string>
+
+    <!-- Cloud signature sync: auth -->
+    <string name="error_login_network">Can\'t reach the server, check your internet connection</string>
+    <string name="error_login_generic">Login failed, please try again</string>
+    <string name="error_session_expired">Your session expired, please log in again</string>
+    <string name="login_title">Log in</string>
+    <string name="login_description">Sync your signature and initial across devices. Guests can keep using SignPDF fully offline without logging in.</string>
+    <string name="login_username_hint">Username</string>
+    <string name="login_password_hint">Password</string>
+    <string name="login_button">Log in</string>
+    <string name="login_error_empty_fields">Username and password can\'t be empty</string>
+    <string name="continue_as_guest">Continue as Guest</string>
+
+    <!-- Cloud signature sync: home status bar -->
+    <string name="status_guest">Guest</string>
+    <string name="status_authenticated">☁ %1$s</string>
+    <string name="sync_button">Sync</string>
+    <string name="logout_button">Log out</string>
+
+    <!-- Cloud signature sync: sync service -->
+    <string name="error_sync_not_logged_in">Log in first to sync</string>
+    <string name="error_sync_generic">Sync failed, please try again</string>
+    <string name="sync_state_syncing">Syncing…</string>
+    <string name="sync_state_synced">Synced</string>
+
+    <!-- Cloud signature sync: guest-to-login migration -->
+    <string name="migration_dialog_title">Upload your local signature?</string>
+    <string name="migration_dialog_message">You have a signature saved on this device that isn\'t in the cloud yet. Upload it now so it syncs to your other devices?</string>
+    <string name="migration_dialog_upload">Upload</string>
+    <string name="migration_dialog_skip">Not now</string>
 </resources>

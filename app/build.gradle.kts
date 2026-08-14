@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -15,6 +16,11 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Public URL behind the homelab's Cloudflare tunnel (mac-mini tunnel ->
+        // localhost:8090, where signPDF-Backend's docker-compose runs) -- works from a real
+        // device or emulator alike, no host-loopback IP needed.
+        buildConfigField("String", "API_BASE_URL", "\"https://signpdf-backend.quezacolt.my.id/\"")
     }
 
     signingConfigs {
@@ -56,6 +62,13 @@ android {
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
+    }
+
+    testOptions {
+        // Robolectric needs the merged manifest/resources available to unit tests (e.g.
+        // getString() calls in the ViewModels/repositories under test).
+        unitTests.isIncludeAndroidResources = true
     }
 }
 
@@ -74,8 +87,17 @@ dependencies {
     implementation(libs.coil)
     implementation(libs.pdfbox.android)
     implementation(libs.signature.pad)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
+    implementation(libs.okhttp)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.security.crypto)
 
     testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
