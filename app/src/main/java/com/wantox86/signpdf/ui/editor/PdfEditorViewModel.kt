@@ -127,7 +127,9 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
         val pageBitmap = _pages.value.getOrNull(pageIndex) ?: return
         val pageWidth = pageBitmap.width.toFloat()
         val pageHeight = pageBitmap.height.toFloat()
-        val defaultWidth = pageWidth * 0.18f
+        // 50% lebih kecil dari default lama (0.18) -- signature/paraf sering perlu diperkecil
+        // manual abis ditaruh, jadi mendingan defaultnya udah lebih deket ke ukuran wajar.
+        val defaultWidth = pageWidth * 0.09f
         val aspectRatio = if (bitmap.width > 0) bitmap.height.toFloat() / bitmap.width.toFloat() else 0.35f
         val defaultHeight = defaultWidth * aspectRatio
 

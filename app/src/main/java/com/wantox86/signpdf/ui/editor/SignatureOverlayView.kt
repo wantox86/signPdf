@@ -190,7 +190,13 @@ class SignatureOverlayView @JvmOverloads constructor(
             }
 
             MotionEvent.ACTION_MOVE -> {
-                if (scaleDetector.isInProgress) {
+                // Cek pointerCount, bukan cuma scaleDetector.isInProgress -- ScaleGestureDetector
+                // butuh sedikit pergerakan dulu sebelum onScaleBegin resmi fire, jadi ada jeda di
+                // mana isInProgress masih false padahal 2 jari udah nempel. Selama jeda itu, kalau
+                // cuma ngandelin isInProgress, gerakan jari pertama kebaca sebagai drag -- kerasa
+                // kayak "pinch nggak ngefek, gambarnya malah geser". Begitu ada 2+ jari, jangan
+                // pernah interpretasikan sebagai drag sama sekali, biarin scaleDetector yang pegang.
+                if (scaleDetector.isInProgress || event.pointerCount > 1) {
                     return true
                 }
 
