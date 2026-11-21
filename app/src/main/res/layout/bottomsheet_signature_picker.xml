@@ -373,7 +373,8 @@
                 <com.github.gcacace.signaturepad.views.SignaturePad
                     android:id="@+id/signature_pad_inline"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
+                    android:layout_height="match_parent"
+                    android:background="@android:color/white" />
 
                 <TextView
                     android:id="@+id/tv_draw_placeholder"

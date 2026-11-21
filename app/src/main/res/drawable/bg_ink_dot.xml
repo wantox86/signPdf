@@ -4,5 +4,5 @@
     <solid android:color="#FFFFFF" />
     <stroke
         android:width="2dp"
-        android:color="@color/sp_outline" />
+        android:color="@color/sp_outline_variant" />
 </shape>

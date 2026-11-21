@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Ink & Paper Design System (Light Mode in Phase 1; DayNight + Obsidian Dark added in Phase 6).
-         Status bar and navigation bar are transparent for Android Edge-to-Edge. -->
-    <style name="Theme.SignPDF" parent="Theme.Material3.Light.NoActionBar">
+    <!-- Ink & Paper (Light) + Obsidian (Dark) Design System via Material 3 DayNight.
+         Status bar and navigation bar are transparent for Android Edge-to-Edge;
+         light/dark system bar icon appearance is configured dynamically in MainActivity. -->
+    <style name="Theme.SignPDF" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/sp_primary</item>
         <item name="colorOnPrimary">@color/sp_on_primary</item>
         <item name="colorPrimaryContainer">@color/sp_primary_container</item>
@@ -20,10 +21,9 @@
         <item name="android:colorBackground">@color/sp_background</item>
         <item name="android:windowBackground">@color/sp_background</item>
 
-        <!-- Edge-to-Edge transparent system bars (light bar icons configured in MainActivity) -->
+        <!-- Edge-to-Edge transparent system bars (light/dark bar icons configured dynamically in MainActivity) -->
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">true</item>
 
         <item name="materialButtonStyle">@style/Widget.SignPDF.Button</item>
         <item name="shapeAppearanceCornerMedium">@style/ShapeAppearance.SignPDF.Medium</item>

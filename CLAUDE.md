@@ -38,7 +38,7 @@ An application for opening, digitally signing, and sharing PDF documents from a 
 
 **No dependency-injection framework is used.** Hilt was configured in the original plan (`@HiltAndroidApp`, `AppModule`, `kapt`) but was subsequently removed in full — no ViewModel ever actually used `@Inject`; every dependency (`PdfRepository`, `EmbedSignatureToPdfUseCase`, etc.) is constructed manually in the ViewModel constructor (`private val pdfRepository = PdfRepository(app)`). New dependencies should follow this manual-construction pattern; do not reintroduce Hilt unless the dependency graph genuinely outgrows manual wiring. The one exception/workaround, introduced for the cloud sync feature, is documented in "Cloud Signature Sync" below (`SignPdfApplication`-hosted singletons + a `@JvmOverloads` testing seam) — it is deliberately *not* a DI framework, just enough to keep repository instances singleton and ViewModels testable.
 
-**UI theme is Material 3** (`Theme.SignPDF` extends `Theme.Material3.Light.NoActionBar`, `res/values/themes.xml`) — a full revamp from the original `Theme.MaterialComponents.Light.NoActionBar`. Light-only, deliberately not `DayNight`: rendered PDF bitmaps have transparent backgrounds where there's no ink, and dark mode let the dark window background show through as black there, hiding dark text/washing out the page. Documents must always render on white regardless of system theme.
+**UI theme is Material 3 DayNight ("Ink & Paper" Light + "Obsidian" Dark)** (`Theme.SignPDF` extends `Theme.Material3.DayNight.NoActionBar`, `res/values/themes.xml`, with light tokens in `res/values/colors.xml` and Obsidian dark tokens in `res/values-night/colors.xml`). Theme preference (System / Light / Dark) is persisted by `ThemePreferenceStore` and applied on startup in `SignPdfApplication.onCreate()` via `AppCompatDelegate.setDefaultNightMode(...)`, with a Sun/Moon toggle in `HomeFragment`'s top bar. **White paper protection in Dark Mode (critical):** rendered PDF bitmaps have transparent backgrounds where there is no ink, and saved signatures use dark ink (`#0F172A`, `#1D4ED8`, `#B91C1C`), so `img_pdf_page` (`item_pdf_page.xml`), all saved-signature preview cards (`card_saved_ttd`, `card_saved_paraf`, `card_sheet_saved_ttd`, `card_sheet_saved_paraf`), and the drawing canvas cards + `SignaturePad` views (`bottomsheet_signature_picker.xml`, `fragment_signature_canvas.xml`) explicitly keep `@android:color/white` backgrounds regardless of system theme.
 
 ---
 
@@ -46,11 +46,11 @@ An application for opening, digitally signing, and sharing PDF documents from a 
 
 ```
 app/src/main/java/com/wantox86/signpdf/
-├── SignPdfApplication.kt        # PDFBoxResourceLoader.init() + CrashHandler.install(); also hosts
-│                                 # the app-wide singletons for cloud sync (see below)
+├── SignPdfApplication.kt        # PDFBoxResourceLoader.init(), CrashHandler.install(), ThemePreferenceStore.applySavedTheme();
+│                                 # also hosts app-wide singletons (cloud sync, recentDocumentsStore, themePreferenceStore)
 ├── CrashHandler.kt              # global uncaught-exception handler; writes the stack trace to a
 │                                 # file, shown as a copyable dialog on the next launch (MainActivity)
-├── MainActivity.kt              # single activity, hosts the NavController, handles ACTION_VIEW intents (Open With)
+├── MainActivity.kt              # single activity, Edge-to-Edge transparent bars (day/night icons), NavController, ACTION_VIEW
 ├── data/
 │   ├── PdfRepository.kt         # wraps RenderPdfPageUseCase
 │   ├── SignatureRepository.kt   # persists user-saved TTD/Paraf bitmaps (to filesDir/signatures/*.png);
@@ -61,7 +61,9 @@ app/src/main/java/com/wantox86/signpdf/
 │   ├── local/
 │   │   ├── TokenStorage.kt      # interface — see "Cloud Signature Sync" testability note
 │   │   ├── TokenStore.kt        # TokenStorage impl, EncryptedSharedPreferences-backed (token/expiry/username)
-│   │   └── SignatureMetadataStore.kt  # plain SharedPreferences+JSON, per-slot sync bookkeeping
+│   │   ├── SignatureMetadataStore.kt  # plain SharedPreferences+JSON, per-slot sync bookkeeping
+│   │   ├── RecentDocumentsStore.kt    # plain SharedPreferences+JSON, capped at 10 recent PDFs (DRAFT/SIGNED)
+│   │   └── ThemePreferenceStore.kt    # plain SharedPreferences, System/Light/Dark via AppCompatDelegate
 │   └── remote/
 │       ├── ApiClient.kt         # builds the Retrofit instance
 │       ├── AuthInterceptor.kt   # attaches "Authorization: Basic <token>" when one is stored
@@ -70,6 +72,7 @@ app/src/main/java/com/wantox86/signpdf/
 ├── domain/
 │   ├── model/
 │   │   ├── PdfDocument.kt       # uri, fileName, pageCount, outputPath
+│   │   ├── RecentDocument.kt    # uri, fileName, sizeBytes, lastOpenedAtMillis, DocumentStatus (DRAFT/SIGNED)
 │   │   ├── SignatureOverlay.kt  # id, type (OverlayType), bitmap, pageIndex, x/y/width/height, createdAt
 │   │   ├── AuthState.kt         # sealed: Guest / Authenticated(username)
 │   │   ├── SyncState.kt         # sealed: Idle / Syncing / Synced(at) / Failed(message)
@@ -81,15 +84,18 @@ app/src/main/java/com/wantox86/signpdf/
 │   └── util/
 │       └── PdfCoordinateConverter.kt     # pure coordinate-conversion math, covered by a unit test
 └── ui/
-    ├── home/                     # HomeFragment + HomeViewModel — entry point, file picker, cloud-sync status bar
+    ├── common/
+    │   └── InsetsExt.kt              # Edge-to-Edge WindowInsets padding/margin helpers applied across all Fragments
+    ├── home/                     # HomeFragment + HomeViewModel + RecentDocumentAdapter (dropzone, theme toggle, account pill, saved strip, recents)
     ├── auth/                     # LoginFragment + LoginViewModel
     ├── editor/
-    │   ├── PdfEditorFragment.kt      # main screen: PDF viewer + Sign/Initial overlays
-    │   ├── PdfEditorViewModel.kt
+    │   ├── PdfEditorFragment.kt      # main screen: PDF viewer, glassmorphic Floating Dock (Undo/Redo/Sign/Initial), Export flow
+    │   ├── PdfEditorViewModel.kt     # includes undo/redo stacks (canUndo/canRedo StateFlow)
+    │   ├── ExportBottomSheet.kt      # "Document Ready" modal sheet (Preview PDF + Share PDF)
     │   ├── PdfPageAdapter.kt         # RecyclerView adapter; overlays are rendered per page (see below)
     │   ├── SignatureOverlayView.kt   # custom drag/resize View, now instantiated per page (not globally)
     │   └── ZoomableContainer.kt      # pinch-to-zoom + pan wrapper around the page RecyclerView
-    ├── signature/                # SignatureCanvasFragment, SignaturePickerBottomSheet, SignatureViewModel
+    ├── signature/                # SignatureCanvasFragment, 2-mode SignaturePickerBottomSheet (Saved/Import + Inline Draw), SignatureViewModel
     ├── preview/                  # PdfPreviewFragment + PdfPreviewViewModel — review before sharing
     └── share/
         └── ShareHelper.kt
@@ -97,7 +103,7 @@ app/src/main/java/com/wantox86/signpdf/
 app/src/test/java/.../domain/util/PdfCoordinateConverterTest.kt        # PDF coordinate math
 app/src/test/java/.../MainDispatcherRule.kt                            # shared JUnit rule, see below
 app/src/test/java/.../data/SyncRepositoryTest.kt                       # + FakeSignPdfApiService in data/remote/
-app/src/test/java/.../data/local/{SignatureMetadataStoreTest,FakeTokenStorage}.kt
+app/src/test/java/.../data/local/{SignatureMetadataStoreTest,RecentDocumentsStoreTest,ThemePreferenceStoreTest,FakeTokenStorage}.kt
 app/src/test/java/.../ui/{auth/LoginViewModelTest,home/HomeViewModelTest}.kt
 ```
 
@@ -191,6 +197,15 @@ class HomeViewModel @JvmOverloads constructor(
 **Guest → login migration.** Right after a successful login, `HomeViewModel` calls `SyncRepository.detectUnsyncedLocalOnly()` (a slot with a local bitmap but no `remoteId` yet) — if any, a confirm dialog offers to upload before the first auto-sync; declining leaves it local-only, fully usable, indefinitely.
 
 **Manifest change:** `INTERNET` permission added. `android:fullBackupContent`/`android:dataExtractionRules` now point at `res/xml/{backup_rules,data_extraction_rules}.xml`, which exclude the entire `sharedpref` domain from Auto Backup and device-transfer — the session token must never round-trip through either.
+
+### 9. "Ink & Paper" UI Revamp & Obsidian Dark Mode (`release/v1.1.0`)
+
+- **Edge-to-Edge (`MainActivity.configureEdgeToEdge()` + `ui/common/InsetsExt.kt`):** Transparent status/navigation bars with dynamic light/dark system bar icons based on `UI_MODE_NIGHT_MASK`. All Fragments apply system bar insets via `applyTopSystemBarPadding()`, `applyBottomSystemBarPadding()`, and `applyBottomSystemBarMargin()`.
+- **Obsidian Dark Mode & White Paper Protection:** `Theme.SignPDF` uses `Theme.Material3.DayNight.NoActionBar` with `res/values-night/colors.xml`. `ThemePreferenceStore` stores System / Light / Dark in `SharedPreferences` and applies it in `SignPdfApplication.onCreate()`. To prevent dark surfaces from washing out transparent PDF bitmaps or dark signature ink, `img_pdf_page`, saved-signature preview cards, and drawing canvas cards/`SignaturePad` views are locked to `@android:color/white`.
+- **Recent Documents (`RecentDocumentsStore`):** Lightweight `SharedPreferences` + JSON store (capped at 10 entries, `DRAFT` / `SIGNED` status) displayed on `HomeFragment` with persistable SAF URI permissions; automatically marked `SIGNED` upon PDF export.
+- **Editor Floating Dock:** `PdfEditorFragment` replaces legacy bottom FABs with a glassmorphic floating pill dock (`Undo`, `Redo`, `Sign`, `Initial`) wired to `PdfEditorViewModel`'s `canUndo`/`canRedo` `StateFlow`s.
+- **2-Mode `SignaturePickerBottomSheet`:** Mode A offers 1-tap placement from saved `TTD`/`PARAF` previews plus `Draw on Screen` and `Import Image`; Mode B embeds an inline `SignaturePad` with 3 ink color dots (`#0F172A`, `#1D4ED8`, `#B91C1C`) and disables bottom-sheet dragging (`behavior.isDraggable = false`) while drawing.
+- **`ExportBottomSheet` ("Document Ready"):** Shown on `ExportState.Success` with file name, formatted size, and a 2-column action grid (`Preview PDF` → `PdfPreviewFragment`, `Share PDF` → `ShareHelper`).
 
 ---
 

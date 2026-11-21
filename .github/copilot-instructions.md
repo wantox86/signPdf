@@ -67,23 +67,24 @@ the dependency graph genuinely outgrows manual wiring.
 
 ```
 app/src/main/java/com/wantox86/signpdf/
-├── SignPdfApplication.kt        # PDFBoxResourceLoader.init() + CrashHandler.install(); also hosts
-│                                 # app-wide singletons for cloud sync (tokenStore, signatureRepository,
-│                                 # authRepository, syncRepository) -- see "Cloud Signature Sync" below
+├── SignPdfApplication.kt        # PDFBoxResourceLoader.init(), CrashHandler.install(), ThemePreferenceStore.applySavedTheme();
+│                                 # hosts app-wide singletons (tokenStore, signatureRepository, recentDocumentsStore,
+│                                 # themePreferenceStore, authRepository, syncRepository)
 ├── CrashHandler.kt              # global crash handler, writes stack trace, shown as a
 │                                 # selectable dialog on next launch (see MainActivity)
-├── MainActivity.kt              # single activity, hosts NavController, handles ACTION_VIEW
+├── MainActivity.kt              # single activity, Edge-to-Edge bars (day/night icons), NavController, ACTION_VIEW
 ├── data/
 │   ├── PdfRepository.kt
 │   ├── SignatureRepository.kt   # persists saved TTD/PARAF bitmaps to filesDir/signatures/*.png;
 │   │                             # + saveBitmapFromSync/bitmapBytesFor/lastModifiedAt (cloud sync only)
 │   ├── AuthRepository.kt        # login/logout/session-expiry; exposes StateFlow<AuthState>
 │   ├── SyncRepository.kt        # client-side sync algorithm (see "Cloud Signature Sync" below)
-│   ├── local/                   # TokenStorage (interface), TokenStore (impl), SignatureMetadataStore
+│   ├── local/                   # TokenStorage, TokenStore, SignatureMetadataStore, RecentDocumentsStore, ThemePreferenceStore
 │   └── remote/                  # ApiClient, AuthInterceptor, SignPdfApiService, dto/
 ├── domain/
 │   ├── model/
 │   │   ├── PdfDocument.kt
+│   │   ├── RecentDocument.kt    # uri, fileName, sizeBytes, lastOpenedAtMillis, DocumentStatus (DRAFT/SIGNED)
 │   │   ├── SignatureOverlay.kt  # id, type, bitmap, pageIndex, x/y/width/height, createdAt
 │   │   ├── AuthState.kt         # sealed: Guest / Authenticated(username)
 │   │   ├── SyncState.kt         # sealed: Idle / Syncing / Synced(at) / Failed(message)
@@ -95,17 +96,17 @@ app/src/main/java/com/wantox86/signpdf/
 │   └── util/
 │       └── PdfCoordinateConverter.kt   # pure math, has a unit test
 └── ui/
-    ├── home/            # HomeFragment/HomeViewModel -- includes the cloud-sync status bar
-    ├── auth/             # LoginFragment, LoginViewModel
-    ├── editor/         # PdfEditorFragment, PdfEditorViewModel, PdfPageAdapter, SignatureOverlayView, ZoomableContainer
-    ├── signature/       # SignatureCanvasFragment, SignaturePickerBottomSheet, SignatureViewModel
+    ├── common/          # InsetsExt.kt (Edge-to-Edge WindowInsets padding/margin helpers)
+    ├── home/            # HomeFragment, HomeViewModel, RecentDocumentAdapter (theme toggle, account pill, saved strip, recents)
+    ├── auth/            # LoginFragment, LoginViewModel
+    ├── editor/          # PdfEditorFragment (Floating Dock), PdfEditorViewModel, ExportBottomSheet, PdfPageAdapter, SignatureOverlayView, ZoomableContainer
+    ├── signature/       # SignatureCanvasFragment, 2-mode SignaturePickerBottomSheet (Picker + Inline Draw), SignatureViewModel
     ├── preview/         # PdfPreviewFragment, PdfPreviewViewModel
     └── share/           # ShareHelper
 
 app/src/test/java/.../domain/util/PdfCoordinateConverterTest.kt   # PDF coordinate math
-app/src/test/java/.../ (feature/cloud-signature-sync branch)      # SyncRepositoryTest, SignatureMetadataStoreTest,
-                                                                    # LoginViewModelTest, HomeViewModelTest,
-                                                                    # MainDispatcherRule, FakeTokenStorage, FakeSignPdfApiService
+app/src/test/java/.../data/local/                                 # SignatureMetadataStoreTest, RecentDocumentsStoreTest, ThemePreferenceStoreTest, FakeTokenStorage
+app/src/test/java/.../                                            # SyncRepositoryTest, LoginViewModelTest, HomeViewModelTest, MainDispatcherRule, FakeSignPdfApiService
 ```
 
 There is no `SignatureSource.kt` (planned early, never used, deleted) and no `di/AppModule.kt`
@@ -294,12 +295,19 @@ and unchanged (zero network calls). Dev backend: `BuildConfig.API_BASE_URL` poin
 - `android:fullBackupContent` / `android:dataExtractionRules` point at
   `res/xml/{backup_rules,data_extraction_rules}.xml`, excluding the entire `sharedpref` domain
   from Auto Backup/device-transfer (the session token must never round-trip through either).
-- Theme (`res/values/themes.xml`) is **`Theme.SignPDF`, extending `Theme.Material3.Light.NoActionBar`**
-  (migrated from the original `Theme.MaterialComponents.Light.NoActionBar` during a full Material 3
-  UI revamp). Still Light-only, not `DayNight`: rendered PDF bitmaps have transparent backgrounds
-  where there's no ink; under dark mode that transparency let the dark window background show
-  through as black, hiding dark text. Documents should always render on white regardless of the
-  device's system theme.
+- Theme (`res/values/themes.xml`) is **`Theme.SignPDF`, extending `Theme.Material3.DayNight.NoActionBar`**
+  ("Ink & Paper" Light in `res/values/colors.xml` + "Obsidian" Dark in `res/values-night/colors.xml`).
+  Theme mode (System / Light / Dark) is stored in `ThemePreferenceStore`, applied in
+  `SignPdfApplication.onCreate()`, and toggled from `HomeFragment`'s top bar.
+  **White paper protection in Dark Mode:** rendered PDF bitmaps have transparent backgrounds where
+  there's no ink, and signatures use dark ink, so `img_pdf_page` (`item_pdf_page.xml`), all
+  saved-signature preview cards, and drawing canvas cards/`SignaturePad` views MUST keep
+  `@android:color/white` backgrounds regardless of system theme.
+- **UI Revamp v1.1.0 components:** Edge-to-Edge (`MainActivity.configureEdgeToEdge()` +
+  `ui/common/InsetsExt.kt`), `RecentDocumentsStore` (10-item SharedPreferences+JSON history),
+  glassmorphic Floating Dock (`Undo`, `Redo`, `Sign`, `Initial`) in `PdfEditorFragment`, 2-mode
+  `SignaturePickerBottomSheet` (1-tap saved / import + inline draw with 3 ink color dots), and
+  `ExportBottomSheet` ("Document Ready" sheet with Preview PDF + Share PDF).
 
 ---
 

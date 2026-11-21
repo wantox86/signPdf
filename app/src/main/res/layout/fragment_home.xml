@@ -32,7 +32,8 @@
                 android:layout_height="18dp"
                 android:layout_gravity="center"
                 android:contentDescription="@null"
-                android:src="@drawable/ic_brand_mark" />
+                android:src="@drawable/ic_brand_mark"
+                app:tint="@color/sp_on_primary" />
         </FrameLayout>
 
         <TextView
@@ -42,6 +43,20 @@
             android:layout_weight="1"
             android:text="@string/app_name"
             android:textAppearance="@style/TextAppearance.SignPDF.AppTitle" />
+
+        <!-- Theme Toggle Button (System / Light / Dark) -->
+        <ImageButton
+            android:id="@+id/btn_theme_toggle"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_account_pill"
+            android:contentDescription="@string/theme_toggle_description"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_moon"
+            app:tint="@color/sp_text_secondary" />
 
         <!-- Compact Account Pill (Guest · Log in, or Cloud username + Sync/Logout menu) -->
         <LinearLayout

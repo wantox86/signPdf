@@ -1,6 +1,7 @@
 package com.wantox86.signpdf.ui.home
 
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -17,6 +18,9 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.snackbar.Snackbar
 import com.wantox86.signpdf.R
+import com.wantox86.signpdf.SignPdfApplication
+import com.wantox86.signpdf.data.local.ThemeMode
+import com.wantox86.signpdf.data.local.ThemePreferenceStore
 import com.wantox86.signpdf.databinding.FragmentHomeBinding
 import com.wantox86.signpdf.domain.model.AuthState
 import com.wantox86.signpdf.domain.model.OverlayType
@@ -32,6 +36,9 @@ class HomeFragment : Fragment() {
     private val binding get() = _binding!!
     private val viewModel: HomeViewModel by viewModels()
     private val recentAdapter = RecentDocumentAdapter { doc -> onRecentDocumentClicked(doc) }
+    private val themePreferenceStore: ThemePreferenceStore
+        get() = (requireActivity().application as? SignPdfApplication)?.themePreferenceStore
+            ?: ThemePreferenceStore(requireContext())
 
     private val openPdfLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -63,6 +70,10 @@ class HomeFragment : Fragment() {
 
         binding.btnOpenPdf.setOnClickListener {
             openPdfLauncher.launch(arrayOf("application/pdf"))
+        }
+        updateThemeToggleIcon()
+        binding.btnThemeToggle.setOnClickListener {
+            showThemeDialog()
         }
         binding.pillAccount.setOnClickListener {
             onAccountPillClicked()
@@ -183,6 +194,32 @@ class HomeFragment : Fragment() {
                     .show()
             }
         }
+    }
+
+    private fun updateThemeToggleIcon() {
+        val isNightMode =
+            (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        binding.btnThemeToggle.setImageResource(
+            if (isNightMode) R.drawable.ic_sun else R.drawable.ic_moon
+        )
+    }
+
+    private fun showThemeDialog() {
+        val modes = arrayOf(ThemeMode.SYSTEM, ThemeMode.LIGHT, ThemeMode.DARK)
+        val labels = arrayOf(
+            getString(R.string.theme_option_system),
+            getString(R.string.theme_option_light),
+            getString(R.string.theme_option_dark)
+        )
+        val currentIndex = modes.indexOf(themePreferenceStore.getThemeMode()).coerceAtLeast(0)
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.theme_dialog_title)
+            .setSingleChoiceItems(labels, currentIndex) { dialog, which ->
+                themePreferenceStore.setAndApplyThemeMode(modes[which])
+                dialog.dismiss()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun showManageSignaturesDialog() {

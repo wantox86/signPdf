@@ -88,18 +88,12 @@
 
 ---
 
-### [ ] Phase 6 — Obsidian Dark Mode & Update Dokumentasi *(NEXT)*
-**Yang perlu dikerjakan:**
-1. Buat `app/src/main/res/values-night/colors.xml` dengan seluruh token **Obsidian Dark** di Bagian 2.
-2. Ubah parent `Theme.SignPDF` di `res/values/themes.xml` dari `Theme.Material3.Light.NoActionBar` menjadi `Theme.Material3.DayNight.NoActionBar` (hapus `android:windowLightStatusBar=true` hardcoded di `themes.xml` karena `MainActivity.configureEdgeToEdge()` sudah otomatis mengatur light/dark system bar icons berdasarkan `UI_MODE_NIGHT_MASK`).
-3. Tambahkan penyimpanan preferensi tema ringan (`ThemePreferenceStore`: System / Light / Dark via `SharedPreferences`) + apply di `SignPdfApplication.onCreate()` via `AppCompatDelegate.setDefaultNightMode(...)`, serta toggle tema di `HomeFragment` (ikon Sun/Moon kecil di top bar atau opsi di Account dialog).
-4. **Proteksi Render PDF & Preview Tanda Tangan di Dark Mode:**
-   - Pastikan `img_pdf_page` di `item_pdf_page.xml` tetap `android:background="@android:color/white"`.
-   - Pastikan kartu preview tanda tangan (`card_saved_ttd`, `card_saved_paraf`, `card_sheet_saved_ttd`, `card_sheet_saved_paraf`, `card_signature_pad`, dan inline `SignaturePad`) tetap berlatar kertas putih (`@android:color/white`) agar tinta hitam/biru tetap kontras di Dark Mode.
-5. Update `CLAUDE.md` (dan `.github/copilot-instructions.md` jika relevan) untuk mencatat:
-   - Ink & Paper + Obsidian Dark Mode (DayNight dengan proteksi kertas putih pada `img_pdf_page`).
-   - Edge-to-Edge (`InsetsExt.kt`), `RecentDocumentsStore`, Floating Dock, 2-mode `SignaturePickerBottomSheet`, dan `ExportBottomSheet`.
-6. Commit Phase 6 ke `release/v1.1.0`.
+### [x] Phase 6 — Obsidian Dark Mode & Update Dokumentasi *(Selesai)*
+- `app/src/main/res/values-night/colors.xml`: seluruh token **Obsidian Dark** (`sp_background` `#090D16`, `sp_surface` `#111827`, `sp_surface_variant` `#1E293B`, `sp_outline` `#1E293B`, `sp_outline_variant` `#334155`, `sp_primary` `#F8FAFC`, `sp_on_primary` `#090D16`, `sp_text_primary` `#F8FAFC`, `sp_text_secondary` `#94A3B8`, `sp_accent` `#3B82F6`, `sp_pdf_backdrop` `#020617`, `sp_dock_background` `#F21E293B`, `sp_dock_border` `#2E94A3B8`, plus status/container tints yang kontras di latar gelap).
+- `app/src/main/res/values/themes.xml`: parent `Theme.SignPDF` diubah ke `Theme.Material3.DayNight.NoActionBar` dan `android:windowLightStatusBar` hardcoded dihapus (sudah diatur dinamis di `MainActivity.configureEdgeToEdge()` berdasarkan `UI_MODE_NIGHT_MASK`).
+- `ThemePreferenceStore.kt` (+ unit test `ThemePreferenceStoreTest.kt`): preferensi System / Light / Dark di `SharedPreferences`, diterapkan di `SignPdfApplication.onCreate()` via `AppCompatDelegate.setDefaultNightMode(...)`, dengan toggle ikon Sun/Moon (`ic_sun.xml`, `ic_moon.xml`) di top bar `HomeFragment`.
+- **Proteksi kertas putih di Dark Mode:** `img_pdf_page`, kartu preview tanda tangan (`card_saved_ttd`, `card_saved_paraf`, `card_sheet_saved_ttd`, `card_sheet_saved_paraf`), `card_signature_pad`, dan `SignaturePad` (`signature_pad_inline` & `signature_pad`) dikunci berlatar `@android:color/white`; ikon brand di `fragment_home.xml` diberi `app:tint="@color/sp_on_primary"`.
+- Update dokumentasi: `CLAUDE.md`, `.github/copilot-instructions.md`, dan `docs/ui-revamp-plan.md`.
 
 ---
 
