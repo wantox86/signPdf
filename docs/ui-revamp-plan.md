@@ -1,0 +1,122 @@
+# SignPDF — UI Revamp Plan & Handoff ("Ink & Paper" Design System)
+
+- **Branch:** `release/v1.1.0` (increment dari tag `v1.0.0`, `versionCode = 2`, `versionName = "1.1.0"`)
+- **Referensi Prototype:** `https://share.gemini.google/MqDHY4URNUE5` (*SignPDF — UI Revamp Concept · Ink & Paper Design System · Android Edge-to-Edge*)
+- **Tech Stack:** Android Kotlin, ViewBinding + Material 3 (tanpa Compose), Manual DI / `SignPdfApplication` singletons (tanpa Hilt).
+
+---
+
+## 1. Keputusan Scope (Final)
+1. **Obsidian Dark Mode:** Masuk ke dalam rangkaian revamp (**Phase 6**).
+2. **Saved Signatures:** Tetap **2 slot (`TTD` + `PARAF`)** agar 100% kompatibel dengan `signPDF-Backend` Cloud Signature Sync.
+3. **Alur Export:** Setelah tap **`Export`**, langsung tampilkan **Export Bottom Sheet** (`Preview PDF` + `Share PDF`). Fitur baru `Save to Device` masuk **TICKET-1** (terpisah).
+4. **Floating Dock:** Fokus pada **`Undo`, `Redo`, `Sign`, `Initial`**. Fitur baru `Date Stamp` dan `Highlight Markup` masuk **TICKET-2** dan **TICKET-3** (terpisah).
+5. **Workflow Commit:** Setiap selesai 1 phase langsung di-commit ke branch `release/v1.1.0` (tidak perlu build lokal jika tidak ada Android SDK; GitHub Actions `.github/workflows/build-android.yml` otomatis berjalan di `release/**`).
+
+---
+
+## 2. Design System Tokens
+
+### Light Mode — "Ink & Paper" (Sudah diimplementasi di `res/values/colors.xml`)
+| Token | Hex | Kegunaan |
+|---|---|---|
+| `sp_background` (Canvas) | `#F8FAFC` | Latar utama halaman |
+| `sp_surface` | `#FFFFFF` | Card, toolbar, bottom sheet |
+| `sp_surface_variant` | `#F1F5F9` | Surface 2, badge PDF, account pill |
+| `sp_outline` / `sp_outline_variant` | `#E2E8F0` / `#CBD5E1` | Hairline border 1dp / dashed border |
+| `sp_primary` (Primary Ink) | `#0F172A` | Teks utama, primary button bg (`#FFFFFF` text) |
+| `sp_text_secondary` | `#64748B` | Subtitle, metadata |
+| `sp_accent` | `#2563EB` | Sign CTA, active links, icon accent |
+| `sp_success` / `sp_success_text` | `#10B981` / `#059669` | Privacy pill, Signed badge (`#1A10B981` tint) |
+| `sp_warning` / `sp_warning_text` | `#F59E0B` / `#B45309` | Draft badge (`#1AF59E0B` tint) |
+| `sp_pdf_backdrop` | `#E2E8F0` | Latar viewport PDF editor & preview |
+| `sp_dock_background` / `sp_dock_border` | `#F00F172A` / `#1FFFFFFF` | Glassmorphic Floating Bottom Dock |
+| Ink Colors | `#0F172A`, `#1D4ED8`, `#B91C1C` | Black Ink, Navy Blue Ink, Crimson Ink |
+
+### Dark Mode — "Obsidian" (Untuk Phase 6: `res/values-night/colors.xml`)
+| Token | Hex | Catatan |
+|---|---|---|
+| `sp_background` (Canvas) | `#090D16` | Latar gelap Obsidian |
+| `sp_surface` | `#111827` | Card, toolbar, bottom sheet |
+| `sp_surface_variant` | `#1E293B` | Surface 2, badge PDF, account pill |
+| `sp_outline` / `sp_outline_variant` | `#1E293B` / `#334155` | Border 1dp / dashed border |
+| `sp_primary` / `sp_on_primary` | `#F8FAFC` / `#090D16` | Primary button bg terang dengan teks gelap |
+| `sp_text_primary` / `sp_text_secondary` | `#F8FAFC` / `#94A3B8` | Teks utama & sekunder |
+| `sp_accent` | `#3B82F6` | Accent Blue terang |
+| `sp_pdf_backdrop` | `#020617` | Backdrop gelap di belakang halaman PDF putih |
+| `sp_dock_background` / `sp_dock_border` | `#F21E293B` / `#2E94A3B8` | Floating Dock Obsidian |
+
+### Corner Radius & Komponen
+- **Cards & Dropzone:** `16dp` (`sp_corner_radius_medium`) · `1dp` hairline border
+- **Primary Buttons:** `12dp` (`sp_corner_radius_small`) · `48dp` min touch height
+- **Bottom Sheet:** `24dp` top radius (`sp_corner_radius_sheet`) · `40×4dp` drag handle
+- **Floating Dock & Pills:** `999dp` (`sp_corner_radius_pill`)
+
+---
+
+## 3. Progress & Checklist Per Phase
+
+### [x] Phase 1 — Foundation: "Ink & Paper" Design System & Edge-to-Edge (`f5c40c8`)
+- Bump `versionCode = 2`, `versionName = "1.1.0"` di `app/build.gradle.kts`.
+- Update `colors.xml`, `dimens.xml`, `themes.xml` (`TextAppearance.SignPDF.*`, `Widget.SignPDF.*`, `ThemeOverlay.SignPDF.BottomSheetDialog`).
+- Aktifkan Edge-to-Edge di `MainActivity.kt` + helper `ui/common/InsetsExt.kt` diterapkan ke semua Fragment.
+- Restyle `fragment_login.xml` dan `bottomsheet_signature_picker.xml`.
+
+### [x] Phase 2 — Home Screen Revamp (`8ef1648`)
+- Top bar dengan brand icon `32×32dp` + Compact Account Pill (`Guest · Log in` / `☁ username` dengan dialog Sync & Log out).
+- Hero Dropzone Card (dashed) + Privacy Pill hijau.
+- Saved Signatures Strip (2 slot: `TTD` & `PARAF` + `+ New` / `+ Manage`).
+- Recent Documents List: `RecentDocument.kt`, `RecentDocumentsStore.kt` (SharedPreferences + JSON, maks. 10 item), `RecentDocumentAdapter.kt`, `item_recent_document.xml`, persistable URI permission, auto-mark `SIGNED` saat export, dan unit test `RecentDocumentsStoreTest.kt`.
+
+### [x] Phase 3 — PDF Editor Revamp (`8b618c9`)
+- Top Toolbar bersih: Back, judul + subtitle dinamis `Page X of Y · 100%` (scroll listener + `ZoomableContainer.onScaleChanged`), dan pill CTA **`Export`** di kanan atas.
+- Viewport PDF full-height berlatar `@color/sp_pdf_backdrop` (`#E2E8F0`); struktur 4-sisi `ConstraintLayout` di `item_pdf_page.xml` dipertahankan utuh (`fixing-signing.md`).
+- Glassmorphic Floating Bottom Dock (`Undo`, `Redo`, divider, pill biru **`Sign`**, dan **`Initial`**) dengan `canUndo`/`canRedo` `StateFlow` di `PdfEditorViewModel`.
+
+### [x] Phase 4 — 1-Tap Sign Bottom Sheet & Inline Draw Canvas (`d3ec468`)
+- `SignaturePickerBottomSheet` 2-mode:
+  - Mode A: `USE SAVED` (`1-tap place`) horizontal preview (`TTD` & `PARAF`) + 2-column grid (`Draw on Screen`, `Import Image`).
+  - Mode B: Inline Draw Canvas dengan 3 ink color dots (`#0F172A`, `#1D4ED8`, `#B91C1C`), placeholder, dashed baseline, `behavior.isDraggable = false` saat menggambar, dan `SignatureViewModel.saveBitmapNow(...)`.
+- Restyle `SignatureCanvasFragment` dengan 3 ink color dots untuk akses `+ Manage` dari Home.
+
+---
+
+### [ ] Phase 5 — Export ("Document Ready") Bottom Sheet & Restyle Preview *(NEXT)*
+**Yang perlu dikerjakan:**
+1. Buat `app/src/main/res/layout/bottomsheet_export.xml` dan `app/src/main/java/com/wantox86/signpdf/ui/editor/ExportBottomSheet.kt`:
+   - Drag handle `40×4dp`, header dengan badge emerald `ic_file_check.xml` (`file-check-2`), judul `"Document Ready"`, subtitle `<fileName> · <formattedSize>`, dan tombol close (`×`).
+   - 2-Column Action Grid:
+     - **`Preview PDF`** (secondary card/outlined): kirim result ke `PdfEditorFragment` untuk navigate ke `PdfPreviewFragment` (`filePath`, `firstSignedPage`).
+     - **`Share PDF`** (primary blue `#2563EB`): langsung memanggil `ShareHelper.sharePdf(requireContext(), File(filePath))`.
+   - *(Tombol `Save to Device` tidak dikerjakan di sini — masuk **TICKET-1**).*
+2. Update `PdfEditorFragment.kt`:
+   - Saat `ExportState.Success`, tampilkan `ExportBottomSheet.newInstance(state.file.absolutePath, state.firstSignedPage)` alih-alih langsung navigate ke `PdfPreviewFragment`.
+   - Dengarkan `ExportBottomSheet.RESULT_KEY` untuk aksi `"preview"` → navigate ke `action_pdfEditorFragment_to_pdfPreviewFragment`.
+3. Restyle `fragment_pdf_preview.xml` & `PdfPreviewFragment.kt`:
+   - Selaraskan toolbar (back button + hairline divider), latar viewport `@color/sp_pdf_backdrop`, dan bottom action bar dengan palet Ink & Paper.
+4. Commit Phase 5 ke `release/v1.1.0`.
+
+---
+
+### [ ] Phase 6 — Obsidian Dark Mode & Update Dokumentasi
+**Yang perlu dikerjakan:**
+1. Buat `app/src/main/res/values-night/colors.xml` dengan seluruh token **Obsidian Dark** di Bagian 2.
+2. Ubah parent `Theme.SignPDF` di `res/values/themes.xml` dari `Theme.Material3.Light.NoActionBar` menjadi `Theme.Material3.DayNight.NoActionBar` (hapus `android:windowLightStatusBar=true` hardcoded di `themes.xml` karena `MainActivity.configureEdgeToEdge()` sudah otomatis mengatur light/dark system bar icons berdasarkan `UI_MODE_NIGHT_MASK`).
+3. Tambahkan penyimpanan preferensi tema ringan (`ThemePreferenceStore`: System / Light / Dark via `SharedPreferences`) + apply di `SignPdfApplication.onCreate()` via `AppCompatDelegate.setDefaultNightMode(...)`, serta toggle tema di `HomeFragment` (ikon Sun/Moon kecil di top bar atau opsi di Account dialog).
+4. **Proteksi Render PDF & Preview Tanda Tangan di Dark Mode:**
+   - Pastikan `img_pdf_page` di `item_pdf_page.xml` tetap `android:background="@android:color/white"`.
+   - Pastikan kartu preview tanda tangan (`card_saved_ttd`, `card_saved_paraf`, `card_sheet_saved_ttd`, `card_sheet_saved_paraf`, `card_signature_pad`, dan inline `SignaturePad`) tetap berlatar kertas putih (`@android:color/white`) agar tinta hitam/biru tetap kontras di Dark Mode.
+5. Update `CLAUDE.md` (dan `.github/copilot-instructions.md` jika relevan) untuk mencatat:
+   - Ink & Paper + Obsidian Dark Mode (DayNight dengan proteksi kertas putih pada `img_pdf_page`).
+   - Edge-to-Edge (`InsetsExt.kt`), `RecentDocumentsStore`, Floating Dock, 2-mode `SignaturePickerBottomSheet`, dan `ExportBottomSheet`.
+6. Commit Phase 6 ke `release/v1.1.0`.
+
+---
+
+## 4. Backlog / Tiket Terpisah (Fitur Baru di Luar Revamp UI Inti)
+
+| Tiket | Nama Fitur | Ringkasan Scope |
+|---|---|---|
+| **TICKET-1** | **Save to Device (`Documents/SignPDF`)** | Tambahkan aksi `Save to Device` di `ExportBottomSheet` menggunakan `MediaStore` (API 29+) dan fallback SAF `CreateDocument` (API 26–28) tanpa `WRITE_EXTERNAL_STORAGE`, plus Snackbar konfirmasi `"Saved to Documents/SignPDF"`. |
+| **TICKET-2** | **Date / Initials Text Stamp** | Tambahkan tombol Stamp di Floating Dock, dialog/preset teks (`AM · 20 Nov 2026`), generator bitmap teks transparan atau `OverlayType` baru, serta dukungan drag/resize & embed di `EmbedSignatureToPdfUseCase`. |
+| **TICKET-3** | **Highlight Markup Tool** | Tambahkan tombol Highlight di Floating Dock, mode penempatan highlight transparan per halaman di `SignatureOverlayView`, serta rendering kotak highlight di `EmbedSignatureToPdfUseCase`. |
