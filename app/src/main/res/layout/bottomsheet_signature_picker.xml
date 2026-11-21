@@ -4,61 +4,425 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/sp_surface"
     android:orientation="vertical"
-    android:paddingHorizontal="@dimen/sp_spacing_lg"
-    android:paddingTop="@dimen/sp_spacing_sm"
-    android:paddingBottom="@dimen/sp_spacing_xl">
+    android:paddingHorizontal="20dp"
+    android:paddingTop="10dp"
+    android:paddingBottom="28dp">
 
+    <!-- 40x4dp Drag Handle -->
     <View
-        android:layout_width="32dp"
-        android:layout_height="4dp"
+        android:layout_width="@dimen/sp_drag_handle_width"
+        android:layout_height="@dimen/sp_drag_handle_height"
         android:layout_gravity="center_horizontal"
-        android:layout_marginBottom="@dimen/sp_spacing_md"
+        android:layout_marginBottom="16dp"
         android:background="@drawable/bg_drag_handle" />
 
-    <TextView
-        android:id="@+id/tv_label_type"
+    <!-- ==================== MODE A: PICKER ==================== -->
+    <LinearLayout
+        android:id="@+id/layout_mode_picker"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="@dimen/sp_spacing_md"
-        android:textAppearance="?attr/textAppearanceTitleMedium"
-        android:textColor="@color/sp_text_primary"
-        tools:text="Sign" />
+        android:orientation="vertical">
 
-    <Button
-        android:id="@+id/btn_draw_on_screen"
-        style="@style/Widget.SignPDF.Button.Outlined"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:text="@string/draw_on_screen"
-        android:textAppearance="?attr/textAppearanceTitleMedium"
-        app:icon="@drawable/ic_draw"
-        app:iconGravity="textStart"
-        app:iconTint="@color/sp_primary" />
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-    <Button
-        android:id="@+id/btn_use_saved"
-        style="@style/Widget.SignPDF.Button.Outlined"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:layout_marginTop="@dimen/sp_spacing_sm"
-        android:text="@string/use_saved_signature"
-        android:textAppearance="?attr/textAppearanceTitleMedium"
-        app:icon="@drawable/ic_saved_signature"
-        app:iconGravity="textStart"
-        app:iconTint="@color/sp_primary" />
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-    <Button
-        android:id="@+id/btn_import_image"
-        style="@style/Widget.SignPDF.Button.Outlined"
+                <TextView
+                    android:id="@+id/tv_sheet_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/add_signature"
+                    android:textAppearance="@style/TextAppearance.SignPDF.CardHeading"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="@string/sheet_sign_subtitle"
+                    android:textAppearance="@style/TextAppearance.SignPDF.Body" />
+            </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/btn_close_sheet"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/close"
+                android:padding="8dp"
+                android:src="@drawable/ic_close"
+                app:tint="@color/sp_text_secondary" />
+        </LinearLayout>
+
+        <!-- USE SAVED (1-tap place) -->
+        <LinearLayout
+            android:id="@+id/section_use_saved"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:orientation="vertical"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/use_saved_signature"
+                    android:textAppearance="@style/TextAppearance.SignPDF.Overline" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/use_saved_hint"
+                    android:textColor="@color/sp_accent"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:clipToPadding="false"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/card_sheet_saved_ttd"
+                        style="@style/Widget.SignPDF.Card"
+                        android:layout_width="140dp"
+                        android:layout_height="72dp"
+                        android:layout_marginEnd="10dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:visibility="gone"
+                        app:cardBackgroundColor="@android:color/white"
+                        app:cardCornerRadius="@dimen/sp_corner_radius_small"
+                        tools:visibility="visible">
+
+                        <FrameLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:padding="8dp">
+
+                            <ImageView
+                                android:id="@+id/img_sheet_saved_ttd"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:contentDescription="@string/overlay_type_ttd"
+                                android:scaleType="fitCenter" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="bottom|start"
+                                android:text="@string/overlay_type_ttd"
+                                android:textColor="@color/sp_text_secondary"
+                                android:textSize="9sp"
+                                android:textStyle="bold" />
+                        </FrameLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/card_sheet_saved_paraf"
+                        style="@style/Widget.SignPDF.Card"
+                        android:layout_width="140dp"
+                        android:layout_height="72dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:visibility="gone"
+                        app:cardBackgroundColor="@android:color/white"
+                        app:cardCornerRadius="@dimen/sp_corner_radius_small"
+                        tools:visibility="visible">
+
+                        <FrameLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:padding="8dp">
+
+                            <ImageView
+                                android:id="@+id/img_sheet_saved_paraf"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:contentDescription="@string/overlay_type_paraf"
+                                android:scaleType="fitCenter" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="bottom|start"
+                                android:text="@string/overlay_type_paraf"
+                                android:textColor="@color/sp_text_secondary"
+                                android:textSize="9sp"
+                                android:textStyle="bold" />
+                        </FrameLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+            </HorizontalScrollView>
+        </LinearLayout>
+
+        <!-- 2-Column Creation Grid -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:baselineAligned="false"
+            android:orientation="horizontal">
+
+            <!-- Draw on Screen -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_draw_on_screen"
+                style="@style/Widget.SignPDF.Card"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <FrameLayout
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:background="@drawable/bg_icon_badge_accent">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_draw"
+                            app:tint="@color/sp_accent" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="@string/draw_on_screen"
+                        android:textAppearance="@style/TextAppearance.SignPDF.RowTitle"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="@string/draw_on_screen_subtitle"
+                        android:textAppearance="@style/TextAppearance.SignPDF.Body" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Import Image -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_import_image"
+                style="@style/Widget.SignPDF.Card"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <FrameLayout
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:background="@drawable/bg_icon_badge_success">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_import_image"
+                            app:tint="@color/sp_success_text" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="@string/import_image"
+                        android:textAppearance="@style/TextAppearance.SignPDF.RowTitle"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="@string/import_image_subtitle"
+                        android:textAppearance="@style/TextAppearance.SignPDF.Body" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- ==================== MODE B: INLINE DRAW ==================== -->
+    <LinearLayout
+        android:id="@+id/layout_mode_draw"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:layout_marginTop="@dimen/sp_spacing_sm"
-        android:text="@string/import_image"
-        android:textAppearance="?attr/textAppearanceTitleMedium"
-        app:icon="@drawable/ic_import_image"
-        app:iconGravity="textStart"
-        app:iconTint="@color/sp_primary" />
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"
+        tools:visibility="gone">
+
+        <!-- Draw Header with 3 Ink Color Dots -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/btn_draw_back"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/back"
+                android:padding="6dp"
+                android:src="@drawable/ic_arrow_back"
+                app:tint="@color/sp_text_primary" />
+
+            <TextView
+                android:id="@+id/tv_draw_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:text="@string/draw_signature_title"
+                android:textAppearance="@style/TextAppearance.SignPDF.CardHeading"
+                android:textSize="16sp" />
+
+            <!-- Ink Color Selector Dots -->
+            <View
+                android:id="@+id/dot_ink_black"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/bg_ink_dot_black"
+                android:clickable="true"
+                android:contentDescription="@string/ink_black"
+                android:focusable="true" />
+
+            <View
+                android:id="@+id/dot_ink_blue"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/bg_ink_dot_blue"
+                android:clickable="true"
+                android:contentDescription="@string/ink_blue"
+                android:focusable="true" />
+
+            <View
+                android:id="@+id/dot_ink_crimson"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:background="@drawable/bg_ink_dot_crimson"
+                android:clickable="true"
+                android:contentDescription="@string/ink_crimson"
+                android:focusable="true" />
+        </LinearLayout>
+
+        <!-- Signature Pad Box -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.SignPDF.Card"
+            android:layout_width="match_parent"
+            android:layout_height="196dp"
+            android:layout_marginTop="14dp"
+            app:cardBackgroundColor="@android:color/white">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <com.github.gcacace.signaturepad.views.SignaturePad
+                    android:id="@+id/signature_pad_inline"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@android:color/white"
+                    android:saveEnabled="false" />
+
+                <TextView
+                    android:id="@+id/tv_draw_placeholder"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="@string/draw_placeholder"
+                    android:textColor="@color/sp_outline_variant"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="2dp"
+                    android:layout_gravity="bottom"
+                    android:layout_marginHorizontal="24dp"
+                    android:layout_marginBottom="36dp"
+                    android:background="@drawable/bg_signature_baseline"
+                    android:layerType="software" />
+            </FrameLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Draw Actions -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_draw_clear"
+                style="@style/Widget.SignPDF.Button.Outlined"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:text="@string/clear"
+                android:textStyle="bold" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_use_signature"
+                style="@style/Widget.SignPDF.Button.Accent"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1.5"
+                android:enabled="false"
+                android:text="@string/use_signature"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
 
 </LinearLayout>

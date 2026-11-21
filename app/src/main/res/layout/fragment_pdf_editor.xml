@@ -4,42 +4,103 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/sp_background"
+    android:background="@color/sp_pdf_backdrop"
     tools:context=".ui.editor.PdfEditorFragment">
 
-    <com.google.android.material.appbar.MaterialToolbar
+    <!-- Clean Edge-to-Edge Top Toolbar -->
+    <LinearLayout
         android:id="@+id/toolbar_editor"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="@color/sp_surface"
+        android:gravity="center_vertical"
         android:minHeight="?attr/actionBarSize"
-        app:navigationIcon="@drawable/ic_arrow_back"
-        app:navigationIconTint="@color/sp_text_primary"
-        app:navigationContentDescription="@string/back"
-        app:menu="@menu/menu_pdf_editor"
-        app:layout_constraintTop_toTopOf="parent"
+        android:orientation="horizontal"
+        android:paddingStart="8dp"
+        android:paddingEnd="12dp"
+        android:paddingVertical="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintTop_toTopOf="parent">
 
-        <TextView
-            android:id="@+id/tv_document_title"
-            android:layout_width="wrap_content"
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/back"
+            android:padding="8dp"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/sp_text_primary" />
+
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textAppearance="?attr/textAppearanceTitleMedium"
-            android:textColor="@color/sp_text_primary"
-            tools:text="document.pdf" />
-    </com.google.android.material.appbar.MaterialToolbar>
+            android:layout_marginStart="6dp"
+            android:layout_marginEnd="10dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
 
+            <TextView
+                android:id="@+id/tv_document_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textAppearance="@style/TextAppearance.SignPDF.RowTitle"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                tools:text="RFC Rollout Cash Management v4.pdf" />
+
+            <TextView
+                android:id="@+id/tv_document_meta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textAppearance="@style/TextAppearance.SignPDF.Body"
+                android:textSize="11sp"
+                tools:text="Page 1 of 3 · 100%" />
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_export"
+            style="@style/Widget.SignPDF.Button.Pill"
+            android:layout_width="wrap_content"
+            android:layout_height="38dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minWidth="0dp"
+            android:minHeight="38dp"
+            android:paddingHorizontal="14dp"
+            android:text="@string/editor_export"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            app:icon="@drawable/ic_export"
+            app:iconGravity="textStart"
+            app:iconPadding="6dp"
+            app:iconSize="15dp"
+            app:iconTint="@color/sp_on_primary" />
+    </LinearLayout>
+
+    <View
+        android:id="@+id/divider_toolbar_editor"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/sp_stroke_hairline"
+        android:background="@color/sp_outline"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/toolbar_editor" />
+
+    <!-- Full-height PDF Viewport behind Floating Dock -->
     <FrameLayout
         android:id="@+id/editor_container"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@id/toolbar_editor"
-        app:layout_constraintBottom_toTopOf="@id/bottom_bar"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintTop_toBottomOf="@id/divider_toolbar_editor">
 
         <!-- ZoomableContainer bungkus RecyclerView buat pinch-to-zoom + pan satu level ke semua
              halaman. Murni transform visual di RecyclerView-nya sendiri: nggak nyentuh
@@ -54,7 +115,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:clipToPadding="false"
-                android:padding="8dp"
+                android:paddingStart="12dp"
+                android:paddingTop="12dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="96dp"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                 tools:listitem="@layout/item_pdf_page" />
         </com.wantox86.signpdf.ui.editor.ZoomableContainer>
@@ -64,73 +128,84 @@
         android:id="@+id/progress_loading_pages"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:visibility="gone"
-        app:layout_constraintTop_toTopOf="@id/editor_container"
-        app:layout_constraintEnd_toEndOf="@id/editor_container"
         android:layout_margin="@dimen/sp_spacing_lg"
-        tools:visibility="visible" />
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_add_paraf"
-        style="@style/Widget.Material3.FloatingActionButton.Secondary"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="@dimen/sp_spacing_sm"
-        android:contentDescription="@string/add_paraf"
-        android:src="@drawable/ic_initial_mark"
         android:visibility="gone"
-        app:tint="?attr/colorOnSecondaryContainer"
-        app:layout_constraintBottom_toTopOf="@id/fab_add_ttd"
-        app:layout_constraintEnd_toEndOf="@id/fab_add_signature"
+        app:layout_constraintEnd_toEndOf="@id/editor_container"
+        app:layout_constraintTop_toTopOf="@id/editor_container"
         tools:visibility="visible" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_add_ttd"
-        style="@style/Widget.Material3.FloatingActionButton.Secondary"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="@dimen/sp_spacing_sm"
-        android:contentDescription="@string/add_ttd"
-        android:src="@drawable/ic_sign_mark"
-        android:visibility="gone"
-        app:tint="?attr/colorOnSecondaryContainer"
-        app:layout_constraintBottom_toTopOf="@id/fab_add_signature"
-        app:layout_constraintEnd_toEndOf="@id/fab_add_signature"
-        tools:visibility="visible" />
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_add_signature"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="@dimen/sp_spacing_lg"
-        android:layout_marginBottom="@dimen/sp_spacing_md"
-        android:contentDescription="@string/add_signature"
-        android:src="@drawable/ic_edit_signature"
-        app:tint="@color/sp_on_primary"
-        app:layout_constraintBottom_toTopOf="@id/bottom_bar"
-        app:layout_constraintEnd_toEndOf="parent" />
-
+    <!-- Glassmorphic Floating Bottom Dock -->
     <LinearLayout
-        android:id="@+id/bottom_bar"
-        android:layout_width="match_parent"
+        android:id="@+id/floating_dock"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@color/sp_surface"
-        android:elevation="@dimen/sp_elevation_medium"
+        android:layout_marginBottom="20dp"
+        android:background="@drawable/bg_floating_dock"
+        android:elevation="@dimen/sp_elevation_dock"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="@dimen/sp_spacing_lg"
-        android:paddingVertical="@dimen/sp_spacing_md"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="6dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
 
-        <Button
-            android:id="@+id/btn_save_and_share"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_weight="1"
-            android:text="@string/save_and_share"
-            android:textAppearance="?attr/textAppearanceTitleMedium" />
+        <ImageButton
+            android:id="@+id/btn_undo"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/undo"
+            android:padding="10dp"
+            android:src="@drawable/ic_undo"
+            app:tint="@color/sp_dock_icon" />
+
+        <ImageButton
+            android:id="@+id/btn_redo"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/redo"
+            android:padding="10dp"
+            android:src="@drawable/ic_redo"
+            app:tint="@color/sp_dock_icon" />
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="22dp"
+            android:layout_marginHorizontal="6dp"
+            android:background="@color/sp_dock_border" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_dock_sign"
+            style="@style/Widget.SignPDF.Button.Accent"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minWidth="0dp"
+            android:minHeight="40dp"
+            android:paddingHorizontal="16dp"
+            android:text="@string/dock_sign"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            app:cornerRadius="@dimen/sp_corner_radius_pill"
+            app:icon="@drawable/ic_pen_tool"
+            app:iconGravity="textStart"
+            app:iconPadding="6dp"
+            app:iconSize="16dp"
+            app:iconTint="@color/sp_on_accent" />
+
+        <ImageButton
+            android:id="@+id/btn_dock_initial"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="4dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/add_paraf"
+            android:padding="9dp"
+            android:src="@drawable/ic_initial_mark"
+            app:tint="@color/sp_dock_icon" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

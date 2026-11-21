@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Obsidian Dark Mode ("Ink & Paper" Night Palette) -->
+
+    <!-- Primary Ink inverted: bright slate surface for primary CTAs & brand mark, dark obsidian text -->
+    <color name="sp_primary">#F8FAFC</color>
+    <color name="sp_on_primary">#090D16</color>
+    <color name="sp_primary_container">#1E3A8A</color>
+    <color name="sp_on_primary_container">#DBEAFE</color>
+
+    <!-- Accent Blue: brighter blue for legibility on dark surfaces -->
+    <color name="sp_accent">#3B82F6</color>
+    <color name="sp_on_accent">#FFFFFF</color>
+    <color name="sp_accent_container">#263B82F6</color>
+
+    <!-- Semantic status: Emerald & Amber adjusted for contrast on dark surfaces -->
+    <color name="sp_success">#10B981</color>
+    <color name="sp_success_text">#34D399</color>
+    <color name="sp_success_container">#2610B981</color>
+    <color name="sp_warning">#F59E0B</color>
+    <color name="sp_warning_text">#FBBF24</color>
+    <color name="sp_warning_container">#26F59E0B</color>
+
+    <!-- Canvas & Surfaces (Obsidian) -->
+    <color name="sp_background">#090D16</color>
+    <color name="sp_on_background">#F8FAFC</color>
+    <color name="sp_surface">#111827</color>
+    <color name="sp_on_surface">#F8FAFC</color>
+    <color name="sp_surface_variant">#1E293B</color>
+    <color name="sp_on_surface_variant">#94A3B8</color>
+
+    <!-- Text -->
+    <color name="sp_text_primary">#F8FAFC</color>
+    <color name="sp_text_secondary">#94A3B8</color>
+
+    <!-- Borders & PDF Viewport -->
+    <color name="sp_outline">#1E293B</color>
+    <color name="sp_outline_variant">#334155</color>
+    <color name="sp_pdf_backdrop">#020617</color>
+
+    <!-- Floating Editor Dock (Obsidian glassmorphic pill) -->
+    <color name="sp_dock_background">#F21E293B</color>
+    <color name="sp_dock_border">#2E94A3B8</color>
+    <color name="sp_dock_icon">#F8FAFC</color>
+    <color name="sp_dock_icon_disabled">#66F8FAFC</color>
+
+    <!-- Signature Ink Options (always rendered on protected white paper surfaces) -->
+    <color name="sp_ink_black">#0F172A</color>
+    <color name="sp_ink_blue">#1D4ED8</color>
+    <color name="sp_ink_crimson">#B91C1C</color>
+    <color name="sp_ink_dot_ring">#94A3B8</color>
+
+    <!-- Modal backdrop scrim -->
+    <color name="sp_scrim">#B3020617</color>
+</resources>

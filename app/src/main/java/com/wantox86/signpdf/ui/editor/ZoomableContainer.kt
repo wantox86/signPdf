@@ -41,6 +41,7 @@ class ZoomableContainer @JvmOverloads constructor(
     }
 
     private var scale = MIN_SCALE
+    var onScaleChanged: ((Float) -> Unit)? = null
     private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
     private var isIntercepting = false
     private var lastX = 0f
@@ -133,5 +134,6 @@ class ZoomableContainer @JvmOverloads constructor(
             target.translationX = clampTranslation(target.translationX, target.width)
             target.translationY = clampTranslation(target.translationY, target.height)
         }
+        onScaleChanged?.invoke(scale)
     }
 }

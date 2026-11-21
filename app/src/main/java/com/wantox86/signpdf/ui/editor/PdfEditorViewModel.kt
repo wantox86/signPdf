@@ -5,10 +5,12 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import android.provider.OpenableColumns
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.wantox86.signpdf.R
+import com.wantox86.signpdf.SignPdfApplication
 import com.wantox86.signpdf.data.PdfRepository
 import com.wantox86.signpdf.domain.model.OverlayType
 import com.wantox86.signpdf.domain.model.PdfDocument
@@ -48,6 +50,10 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
     val loadError: StateFlow<String?> = _loadError
     private val _documentTitle = MutableStateFlow("")
     val documentTitle: StateFlow<String> = _documentTitle
+    private val _canUndo = MutableStateFlow(false)
+    val canUndo: StateFlow<Boolean> = _canUndo
+    private val _canRedo = MutableStateFlow(false)
+    val canRedo: StateFlow<Boolean> = _canRedo
 
     private var pdfDocument: PdfDocument? = null
     private val undoStack = ArrayDeque<List<SignatureOverlay>>()
@@ -72,6 +78,11 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
                 val fileName = resolveDisplayName(context, uri)
                 pdfDocument = PdfDocument(uri, fileName, pageCount)
                 _documentTitle.value = fileName
+                (context as? SignPdfApplication)?.recentDocumentsStore?.recordOpened(
+                    uri = uriString,
+                    fileName = fileName,
+                    sizeBytes = 0L
+                )
                 _pages.value = List(pageCount) { null }
                 renderAllPages()
             } catch (e: Exception) {
@@ -153,16 +164,31 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
         _overlays.value = newOverlays
     }
 
+    fun updateOverlaysForPage(pageIndex: Int, overlaysForPage: List<SignatureOverlay>) {
+        val currentForPage = _overlays.value.filter { it.pageIndex == pageIndex }
+        if (currentForPage == overlaysForPage) return
+        val merged = _overlays.value.filter { it.pageIndex != pageIndex } + overlaysForPage
+        pushHistory()
+        _overlays.value = merged
+    }
+
+    @VisibleForTesting
+    internal fun setPagesForTesting(pages: List<Bitmap?>) {
+        _pages.value = pages
+    }
+
     fun undoOverlay() {
         if (undoStack.isEmpty()) return
         redoStack.addLast(_overlays.value)
         _overlays.value = undoStack.removeLast()
+        updateHistoryAvailability()
     }
 
     fun redoOverlay() {
         if (redoStack.isEmpty()) return
         undoStack.addLast(_overlays.value)
         _overlays.value = redoStack.removeLast()
+        updateHistoryAvailability()
     }
 
     fun export() {
@@ -178,6 +204,7 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
                 val overlaysToEmbed = _overlays.value
                 val result = exportPdfUseCase.execute(document, overlaysToEmbed)
                 pdfDocument = result.document
+                (context as? SignPdfApplication)?.recentDocumentsStore?.markSigned(document.uri.toString())
                 val firstSignedPage = overlaysToEmbed.minOfOrNull { it.pageIndex } ?: 0
                 _exportState.value = ExportState.Success(result.file, result.diagnostics, firstSignedPage)
             } catch (e: Exception) {
@@ -194,6 +221,12 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
     private fun pushHistory() {
         undoStack.addLast(_overlays.value)
         redoStack.clear()
+        updateHistoryAvailability()
+    }
+
+    private fun updateHistoryAvailability() {
+        _canUndo.value = undoStack.isNotEmpty()
+        _canRedo.value = redoStack.isNotEmpty()
     }
 
     fun resetExportState() {

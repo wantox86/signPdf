@@ -12,6 +12,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.snackbar.Snackbar
 import com.wantox86.signpdf.databinding.FragmentLoginBinding
+import com.wantox86.signpdf.ui.common.applyBottomSystemBarPadding
+import com.wantox86.signpdf.ui.common.applyTopSystemBarPadding
 import kotlinx.coroutines.launch
 
 class LoginFragment : Fragment() {
@@ -28,6 +30,8 @@ class LoginFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        binding.toolbarLogin.applyTopSystemBarPadding()
+        binding.scrollLogin.applyBottomSystemBarPadding()
 
         binding.toolbarLogin.setNavigationOnClickListener {
             findNavController().popBackStack()

@@ -5,7 +5,9 @@ import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.wantox86.signpdf.data.AuthRepository
 import com.wantox86.signpdf.data.SignatureRepository
 import com.wantox86.signpdf.data.SyncRepository
+import com.wantox86.signpdf.data.local.RecentDocumentsStore
 import com.wantox86.signpdf.data.local.SignatureMetadataStore
+import com.wantox86.signpdf.data.local.ThemePreferenceStore
 import com.wantox86.signpdf.data.local.TokenStore
 import com.wantox86.signpdf.data.remote.ApiClient
 
@@ -19,6 +21,8 @@ class SignPdfApplication : Application() {
     // about it).
     val tokenStore by lazy { TokenStore(this) }
     val signatureRepository by lazy { SignatureRepository(this) }
+    val recentDocumentsStore by lazy { RecentDocumentsStore(this) }
+    val themePreferenceStore by lazy { ThemePreferenceStore(this) }
     private val signatureMetadataStore by lazy { SignatureMetadataStore(this) }
     private val apiService by lazy { ApiClient.create(tokenStore) }
     val authRepository by lazy { AuthRepository(this, apiService, tokenStore) }
@@ -29,6 +33,7 @@ class SignPdfApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         CrashHandler.install(this)
+        themePreferenceStore.applySavedTheme()
         // Wajib dipanggil sekali sebelum pdfbox-android dipake (load font/cmap bawaan dari
         // assets) -- kelewat ini bikin crash pas load/render PDF pertama kali.
         PDFBoxResourceLoader.init(applicationContext)

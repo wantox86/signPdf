@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="?attr/selectableItemBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:minHeight="60dp"
+        android:orientation="horizontal"
+        android:paddingHorizontal="@dimen/sp_spacing_md"
+        android:paddingVertical="12dp">
+
+        <TextView
+            android:id="@+id/tv_pdf_badge"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:background="@drawable/bg_pdf_badge"
+            android:gravity="center"
+            android:text="@string/doc_badge_pdf"
+            android:textAppearance="@style/TextAppearance.SignPDF.MonoBadge" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="10dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_doc_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textAppearance="@style/TextAppearance.SignPDF.RowTitle"
+                tools:text="RFC Rollout Cash Management v4.pdf" />
+
+            <TextView
+                android:id="@+id/tv_doc_meta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textAppearance="@style/TextAppearance.SignPDF.Body"
+                tools:text="2.4 MB · 2m ago" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_doc_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="4dp"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            tools:background="@drawable/bg_pill_success"
+            tools:text="Signed"
+            tools:textColor="@color/sp_success_text" />
+    </LinearLayout>
+
+    <View
+        android:id="@+id/divider_row"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/sp_stroke_hairline"
+        android:layout_marginStart="66dp"
+        android:background="@color/sp_outline" />
+</LinearLayout>

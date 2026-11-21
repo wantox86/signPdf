@@ -1,24 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Primary: deepened purple, more mature than a default Material purple -->
-    <color name="sp_primary">#5B2BE0</color>
-    <color name="sp_on_primary">#FFFFFF</color>
-    <color name="sp_primary_container">#EAE1FB</color>
-    <color name="sp_on_primary_container">#22105E</color>
+    <!-- Ink & Paper Design System (Light Mode) -->
 
-    <!-- Background / surface: warm light grey background, white surfaces -->
-    <color name="sp_background">#F7F7F8</color>
-    <color name="sp_on_background">#1C1B1F</color>
+    <!-- Primary Ink: deep slate for brand mark, primary CTAs, and primary text -->
+    <color name="sp_primary">#0F172A</color>
+    <color name="sp_on_primary">#FFFFFF</color>
+    <color name="sp_primary_container">#DBEAFE</color>
+    <color name="sp_on_primary_container">#1D4ED8</color>
+
+    <!-- Accent Blue: signature CTA, active controls, interactive links -->
+    <color name="sp_accent">#2563EB</color>
+    <color name="sp_on_accent">#FFFFFF</color>
+    <color name="sp_accent_container">#EFF6FF</color>
+
+    <!-- Semantic status: Success (Emerald) & Draft/Warning (Amber) -->
+    <color name="sp_success">#10B981</color>
+    <color name="sp_success_text">#059669</color>
+    <color name="sp_success_container">#1A10B981</color>
+    <color name="sp_warning">#F59E0B</color>
+    <color name="sp_warning_text">#B45309</color>
+    <color name="sp_warning_container">#1AF59E0B</color>
+
+    <!-- Canvas & Surfaces -->
+    <color name="sp_background">#F8FAFC</color>
+    <color name="sp_on_background">#0F172A</color>
     <color name="sp_surface">#FFFFFF</color>
-    <color name="sp_on_surface">#1C1B1F</color>
-    <color name="sp_surface_variant">#F0EFF2</color>
-    <color name="sp_on_surface_variant">#49454E</color>
+    <color name="sp_on_surface">#0F172A</color>
+    <color name="sp_surface_variant">#F1F5F9</color>
+    <color name="sp_on_surface_variant">#64748B</color>
 
     <!-- Text -->
-    <color name="sp_text_primary">#1C1B1F</color>
-    <color name="sp_text_secondary">#5F5C66</color>
+    <color name="sp_text_primary">#0F172A</color>
+    <color name="sp_text_secondary">#64748B</color>
 
-    <!-- Border / outline -->
-    <color name="sp_outline">#E1DFE3</color>
-    <color name="sp_outline_variant">#CAC7CE</color>
+    <!-- Borders & PDF Viewport -->
+    <color name="sp_outline">#E2E8F0</color>
+    <color name="sp_outline_variant">#CBD5E1</color>
+    <color name="sp_pdf_backdrop">#E2E8F0</color>
+
+    <!-- Floating Editor Dock (glassmorphic dark pill) -->
+    <color name="sp_dock_background">#F00F172A</color>
+    <color name="sp_dock_border">#1FFFFFFF</color>
+    <color name="sp_dock_icon">#F8FAFC</color>
+    <color name="sp_dock_icon_disabled">#66F8FAFC</color>
+
+    <!-- Signature Ink Options -->
+    <color name="sp_ink_black">#0F172A</color>
+    <color name="sp_ink_blue">#1D4ED8</color>
+    <color name="sp_ink_crimson">#B91C1C</color>
+    <color name="sp_ink_dot_ring">#CBD5E1</color>
+
+    <!-- Modal backdrop scrim -->
+    <color name="sp_scrim">#80020617</color>
 </resources>

@@ -48,6 +48,10 @@ class SignatureViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    suspend fun saveBitmapNow(bitmap: Bitmap, type: OverlayType) {
+        repository.saveBitmap(type, bitmap)
+    }
+
     fun importFromUri(uri: Uri, type: OverlayType) {
         val context = getApplication<Application>()
         viewModelScope.launch {
