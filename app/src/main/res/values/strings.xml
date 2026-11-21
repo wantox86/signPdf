@@ -31,6 +31,12 @@
     <string name="editor_export">Export</string>
     <string name="editor_page_meta">Page %1$d of %2$d · %3$d%%</string>
     <string name="dock_sign">Sign</string>
+    <string name="export_sheet_title">Document Ready</string>
+    <string name="export_sheet_meta">%1$s · %2$s</string>
+    <string name="export_action_preview">Preview PDF</string>
+    <string name="export_action_preview_subtitle">Inspect pages</string>
+    <string name="export_action_share">Share PDF</string>
+    <string name="export_action_share_subtitle">Send or open in app</string>
     <string name="share">Share</string>
     <string name="back_to_editor">Back to Editor</string>
     <string name="error_preview_load">Failed to load PDF preview</string>

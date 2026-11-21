@@ -169,6 +169,26 @@ class PdfEditorFragment : Fragment() {
             }
         }
 
+        parentFragmentManager.setFragmentResultListener(
+            ExportBottomSheet.RESULT_KEY,
+            viewLifecycleOwner
+        ) { _, bundle ->
+            val action = bundle.getString(ExportBottomSheet.RESULT_ACTION)
+                ?: return@setFragmentResultListener
+            if (action == ExportBottomSheet.ACTION_PREVIEW) {
+                val filePath = bundle.getString(ExportBottomSheet.RESULT_FILE_PATH)
+                    ?: return@setFragmentResultListener
+                val firstSignedPage = bundle.getInt(ExportBottomSheet.RESULT_FIRST_SIGNED_PAGE, 0)
+                findNavController().navigate(
+                    R.id.action_pdfEditorFragment_to_pdfPreviewFragment,
+                    bundleOf(
+                        "filePath" to filePath,
+                        "firstSignedPage" to firstSignedPage
+                    )
+                )
+            }
+        }
+
         val pdfUri = arguments?.getString("pdfUri")
         pdfUri?.let { viewModel.loadPdf(it) }
 
@@ -267,13 +287,12 @@ class PdfEditorFragment : Fragment() {
                             is ExportState.Loading -> showProgress()
                             is ExportState.Success -> {
                                 hideProgress()
-                                findNavController().navigate(
-                                    R.id.action_pdfEditorFragment_to_pdfPreviewFragment,
-                                    bundleOf(
-                                        "filePath" to state.file.absolutePath,
-                                        "firstSignedPage" to state.firstSignedPage
-                                    )
-                                )
+                                if (parentFragmentManager.findFragmentByTag(ExportBottomSheet.TAG) == null) {
+                                    ExportBottomSheet.newInstance(
+                                        filePath = state.file.absolutePath,
+                                        firstSignedPage = state.firstSignedPage
+                                    ).show(parentFragmentManager, ExportBottomSheet.TAG)
+                                }
                                 viewModel.resetExportState()
                             }
 

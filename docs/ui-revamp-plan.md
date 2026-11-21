@@ -81,24 +81,14 @@
 
 ---
 
-### [ ] Phase 5 — Export ("Document Ready") Bottom Sheet & Restyle Preview *(NEXT)*
-**Yang perlu dikerjakan:**
-1. Buat `app/src/main/res/layout/bottomsheet_export.xml` dan `app/src/main/java/com/wantox86/signpdf/ui/editor/ExportBottomSheet.kt`:
-   - Drag handle `40×4dp`, header dengan badge emerald `ic_file_check.xml` (`file-check-2`), judul `"Document Ready"`, subtitle `<fileName> · <formattedSize>`, dan tombol close (`×`).
-   - 2-Column Action Grid:
-     - **`Preview PDF`** (secondary card/outlined): kirim result ke `PdfEditorFragment` untuk navigate ke `PdfPreviewFragment` (`filePath`, `firstSignedPage`).
-     - **`Share PDF`** (primary blue `#2563EB`): langsung memanggil `ShareHelper.sharePdf(requireContext(), File(filePath))`.
-   - *(Tombol `Save to Device` tidak dikerjakan di sini — masuk **TICKET-1**).*
-2. Update `PdfEditorFragment.kt`:
-   - Saat `ExportState.Success`, tampilkan `ExportBottomSheet.newInstance(state.file.absolutePath, state.firstSignedPage)` alih-alih langsung navigate ke `PdfPreviewFragment`.
-   - Dengarkan `ExportBottomSheet.RESULT_KEY` untuk aksi `"preview"` → navigate ke `action_pdfEditorFragment_to_pdfPreviewFragment`.
-3. Restyle `fragment_pdf_preview.xml` & `PdfPreviewFragment.kt`:
-   - Selaraskan toolbar (back button + hairline divider), latar viewport `@color/sp_pdf_backdrop`, dan bottom action bar dengan palet Ink & Paper.
-4. Commit Phase 5 ke `release/v1.1.0`.
+### [x] Phase 5 — Export ("Document Ready") Bottom Sheet & Restyle Preview *(Selesai)*
+- `ic_file_check.xml`, `ic_preview_eye.xml`, `bg_icon_badge_on_accent.xml`, `bottomsheet_export.xml`, dan `ExportBottomSheet.kt`: drag handle `40×4dp`, header badge emerald (`Document Ready`, `<fileName> · <formattedSize>`, tombol close), dan 2-column action grid (`Preview PDF` outlined card + `Share PDF` primary blue `#2563EB`).
+- `PdfEditorFragment.kt`: `ExportState.Success` menampilkan `ExportBottomSheet` (dengan deduplikasi tag) dan mendengarkan `ExportBottomSheet.RESULT_KEY` untuk aksi `"preview"` → navigate ke `PdfPreviewFragment`.
+- Restyle `fragment_pdf_preview.xml` & `PdfPreviewFragment.kt` dengan toolbar Ink & Paper (back button, judul + filename, badge `Signed`, hairline divider `@color/sp_outline`), viewport `@color/sp_pdf_backdrop`, dan bottom action bar (`Back to Editor` outlined + `Share PDF` accent blue).
 
 ---
 
-### [ ] Phase 6 — Obsidian Dark Mode & Update Dokumentasi
+### [ ] Phase 6 — Obsidian Dark Mode & Update Dokumentasi *(NEXT)*
 **Yang perlu dikerjakan:**
 1. Buat `app/src/main/res/values-night/colors.xml` dengan seluruh token **Obsidian Dark** di Bagian 2.
 2. Ubah parent `Theme.SignPDF` di `res/values/themes.xml` dari `Theme.Material3.Light.NoActionBar` menjadi `Theme.Material3.DayNight.NoActionBar` (hapus `android:windowLightStatusBar=true` hardcoded di `themes.xml` karena `MainActivity.configureEdgeToEdge()` sudah otomatis mengatur light/dark system bar icons berdasarkan `UI_MODE_NIGHT_MASK`).

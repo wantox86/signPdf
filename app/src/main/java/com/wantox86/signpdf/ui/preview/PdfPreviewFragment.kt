@@ -39,6 +39,10 @@ class PdfPreviewFragment : Fragment() {
         binding.toolbarPreviewActions.applyBottomSystemBarPadding()
         binding.recyclerPreviewPages.adapter = adapter
 
+        binding.btnPreviewBack.setOnClickListener {
+            findNavController().navigateUp()
+        }
+
         binding.btnBackToEditor.setOnClickListener {
             findNavController().navigateUp()
         }
@@ -53,6 +57,7 @@ class PdfPreviewFragment : Fragment() {
             Snackbar.make(binding.root, getString(com.wantox86.signpdf.R.string.error_preview_load), Snackbar.LENGTH_LONG).show()
             return
         }
+        binding.tvPreviewFilename.text = File(filePath).name
         viewModel.loadPreview(filePath)
 
         // viewLifecycleOwner.lifecycleScope + repeatOnLifecycle, bukan lifecycleScope Fragment +
