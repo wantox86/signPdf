@@ -2,28 +2,32 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:clipToPadding="false"
+    android:paddingBottom="10dp">
 
     <ImageView
         android:id="@+id/img_pdf_page"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@android:color/white"
         android:adjustViewBounds="true"
+        android:background="@android:color/white"
+        android:elevation="@dimen/sp_elevation_low"
         android:scaleType="fitCenter"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <View
         android:id="@+id/view_skeleton"
         android:layout_width="match_parent"
         android:layout_height="320dp"
-        android:background="@color/sp_surface_variant"
+        android:background="@color/sp_surface"
+        android:elevation="@dimen/sp_elevation_low"
         android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <!-- Constraint langsung ke 4 sisi img_pdf_page (bukan match_parent ke root): root ini
          wrap_content dan RecyclerView item biasa diukur UNSPECIFIED, kombinasi itu bikin child
@@ -33,9 +37,10 @@
         android:id="@+id/signature_overlay_view"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintTop_toTopOf="@id/img_pdf_page"
+        android:elevation="@dimen/sp_elevation_medium"
         app:layout_constraintBottom_toBottomOf="@id/img_pdf_page"
+        app:layout_constraintEnd_toEndOf="@id/img_pdf_page"
         app:layout_constraintStart_toStartOf="@id/img_pdf_page"
-        app:layout_constraintEnd_toEndOf="@id/img_pdf_page" />
+        app:layout_constraintTop_toTopOf="@id/img_pdf_page" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

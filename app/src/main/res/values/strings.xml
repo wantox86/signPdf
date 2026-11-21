@@ -28,6 +28,9 @@
     <string name="overlay_type_ttd">Sign</string>
     <string name="overlay_type_paraf">Initial</string>
     <string name="save_and_share">Preview &amp; Share</string>
+    <string name="editor_export">Export</string>
+    <string name="editor_page_meta">Page %1$d of %2$d · %3$d%%</string>
+    <string name="dock_sign">Sign</string>
     <string name="share">Share</string>
     <string name="back_to_editor">Back to Editor</string>
     <string name="error_preview_load">Failed to load PDF preview</string>

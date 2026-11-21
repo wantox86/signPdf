@@ -17,17 +17,20 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
 import com.google.android.material.snackbar.Snackbar
+import com.wantox86.signpdf.R
 import com.wantox86.signpdf.databinding.FragmentPdfEditorBinding
 import com.wantox86.signpdf.domain.model.OverlayType
 import com.wantox86.signpdf.domain.model.SignatureOverlay
-import com.wantox86.signpdf.ui.common.applyBottomSystemBarPadding
+import com.wantox86.signpdf.ui.common.applyBottomSystemBarMargin
 import com.wantox86.signpdf.ui.common.applyTopSystemBarPadding
 import com.wantox86.signpdf.ui.signature.SignaturePickerBottomSheet
 import com.wantox86.signpdf.ui.signature.SignatureViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 class PdfEditorFragment : Fragment() {
     private var _binding: FragmentPdfEditorBinding? = null
@@ -40,7 +43,8 @@ class PdfEditorFragment : Fragment() {
     private var awaitingPreviousBitmapRef: Any? = null
     private var allOverlays: List<SignatureOverlay> = emptyList()
     private var progressDialog: AlertDialog? = null
-    private var isSignatureMenuExpanded = false
+    private var totalPages: Int = 0
+    private var currentZoomPercent: Int = 100
 
     private val importImageLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
@@ -58,7 +62,7 @@ class PdfEditorFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.toolbarEditor.applyTopSystemBarPadding()
-        binding.bottomBar.applyBottomSystemBarPadding()
+        binding.floatingDock.applyBottomSystemBarMargin()
         binding.recyclerPdfPages.adapter = adapter
         // notifyItemChanged() default-nya mainin change-animation (crossfade ke ViewHolder
         // pengganti) -- kalau itu kejadian di item yang overlay-nya lagi disentuh, view penerima
@@ -75,50 +79,45 @@ class PdfEditorFragment : Fragment() {
             viewModel.updateOverlays(merged)
         }
 
-        binding.fabAddSignature.setOnClickListener {
-            toggleSignatureMenu()
+        binding.recyclerPdfPages.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                updateDocumentMeta()
+            }
+        })
+
+        binding.zoomableContainer.onScaleChanged = { scale ->
+            currentZoomPercent = (scale * 100f).roundToInt()
+            updateDocumentMeta()
         }
 
-        binding.fabAddTtd.setOnClickListener {
-            toggleSignatureMenu()
-            SignaturePickerBottomSheet.newInstance(
-                overlayType = OverlayType.TTD,
-                hasSavedSignature = signatureViewModel.ttdBitmap.value != null
-            )
-                .show(parentFragmentManager, "signature_picker_ttd")
-        }
-
-        binding.fabAddParaf.setOnClickListener {
-            toggleSignatureMenu()
-            SignaturePickerBottomSheet.newInstance(
-                overlayType = OverlayType.PARAF,
-                hasSavedSignature = signatureViewModel.parafBitmap.value != null
-            )
-                .show(parentFragmentManager, "signature_picker_paraf")
-        }
-
-        binding.btnSaveAndShare.setOnClickListener {
-            viewModel.export()
-        }
-
-        binding.toolbarEditor.setNavigationOnClickListener {
+        binding.btnBack.setOnClickListener {
             findNavController().navigateUp()
         }
 
-        binding.toolbarEditor.setOnMenuItemClickListener { item ->
-            when (item.itemId) {
-                com.wantox86.signpdf.R.id.action_undo -> {
-                    viewModel.undoOverlay()
-                    true
-                }
+        binding.btnExport.setOnClickListener {
+            viewModel.export()
+        }
 
-                com.wantox86.signpdf.R.id.action_redo -> {
-                    viewModel.redoOverlay()
-                    true
-                }
+        binding.btnUndo.setOnClickListener {
+            viewModel.undoOverlay()
+        }
 
-                else -> false
-            }
+        binding.btnRedo.setOnClickListener {
+            viewModel.redoOverlay()
+        }
+
+        binding.btnDockSign.setOnClickListener {
+            SignaturePickerBottomSheet.newInstance(
+                overlayType = OverlayType.TTD,
+                hasSavedSignature = signatureViewModel.ttdBitmap.value != null
+            ).show(parentFragmentManager, "signature_picker_ttd")
+        }
+
+        binding.btnDockInitial.setOnClickListener {
+            SignaturePickerBottomSheet.newInstance(
+                overlayType = OverlayType.PARAF,
+                hasSavedSignature = signatureViewModel.parafBitmap.value != null
+            ).show(parentFragmentManager, "signature_picker_paraf")
         }
 
         parentFragmentManager.setFragmentResultListener(
@@ -137,7 +136,7 @@ class PdfEditorFragment : Fragment() {
                         OverlayType.PARAF -> signatureViewModel.parafBitmap.value
                     }
                     findNavController().navigate(
-                        com.wantox86.signpdf.R.id.signatureCanvasFragment,
+                        R.id.signatureCanvasFragment,
                         bundleOf("type" to overlayType.name)
                     )
                 }
@@ -162,7 +161,7 @@ class PdfEditorFragment : Fragment() {
                     } else {
                         Snackbar.make(
                             binding.root,
-                            getString(com.wantox86.signpdf.R.string.no_saved_signature),
+                            getString(R.string.no_saved_signature),
                             Snackbar.LENGTH_SHORT
                         ).show()
                     }
@@ -176,10 +175,7 @@ class PdfEditorFragment : Fragment() {
         // viewLifecycleOwner.lifecycleScope + repeatOnLifecycle (bukan lifecycleScope Fragment +
         // launchWhenStarted): lifecycleScope milik Fragment BERTAHAN lintas re-create view (mis.
         // balik dari back-stack), jadi launchWhenStarted lama nggak pernah ke-cancel -- tiap kali
-        // Fragment ini kelihatan lagi, collector BARU numpuk di atas yang lama. Beberapa
-        // collector aktif bareng brarti satu event (klik tombol, hasil signature, dll) bisa
-        // ke-proses berkali-kali (contoh nyata: navigate() dobel ke NavController, yang kedua
-        // gagal dengan IllegalArgumentException karena destination udah pindah). repeatOnLifecycle
+        // Fragment ini kelihatan lagi, collector BARU numpuk di atas yang lama. repeatOnLifecycle
         // terikat viewLifecycleOwner, otomatis cancel bersih tiap onDestroyView.
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -191,12 +187,12 @@ class PdfEditorFragment : Fragment() {
 
                 launch {
                     viewModel.pages.collectLatest { pages ->
+                        totalPages = pages.size
+                        updateDocumentMeta()
                         // adapter.onPageVisible dipanggil dari dalam onBindViewHolder, yang bisa
                         // memicu update pages ini secara synchronous selagi RecyclerView masih di
                         // tengah layout pass (viewModelScope pakai Dispatchers.Main.immediate).
-                        // notifyDataSetChanged() langsung di titik itu bikin IllegalStateException
-                        // "Cannot call this method while RecyclerView is computing a layout or
-                        // scrolling" -- post() biar nunggu layout pass yang lagi jalan kelar dulu.
+                        // post() biar nunggu layout pass yang lagi jalan kelar dulu.
                         binding.recyclerPdfPages.post {
                             if (_binding != null) adapter.setPages(pages)
                         }
@@ -206,15 +202,26 @@ class PdfEditorFragment : Fragment() {
                 launch {
                     viewModel.isLoadingPages.collectLatest { loading ->
                         binding.progressLoadingPages.visibility = if (loading) View.VISIBLE else View.GONE
-                        // Nambah overlay butuh bitmap halaman itu udah kerender buat nentuin
-                        // ukuran halaman yang bener (lihat komentar di
-                        // PdfEditorViewModel.addOverlay) -- kalau user scroll cepet ke halaman
-                        // bawah & nambahin sign sebelum render halaman itu kelar, dulu bakal
-                        // ke-fallback ke ukuran tebakan yang salah (khususnya buat dokumen
-                        // landscape). Disable tombol tambah sampe render semua halaman kelar
-                        // biar kejadian itu nggak mungkin lagi.
-                        binding.fabAddTtd.isEnabled = !loading
-                        binding.fabAddParaf.isEnabled = !loading
+                        // Disable tombol tambah sampe render semua halaman kelar biar ukuran
+                        // halaman sudah pasti benar sebelum overlay ditempatkan.
+                        binding.btnDockSign.isEnabled = !loading
+                        binding.btnDockInitial.isEnabled = !loading
+                        binding.btnDockInitial.alpha = if (loading) 0.4f else 1f
+                        binding.btnExport.isEnabled = !loading
+                    }
+                }
+
+                launch {
+                    viewModel.canUndo.collectLatest { enabled ->
+                        binding.btnUndo.isEnabled = enabled
+                        binding.btnUndo.alpha = if (enabled) 1f else 0.35f
+                    }
+                }
+
+                launch {
+                    viewModel.canRedo.collectLatest { enabled ->
+                        binding.btnRedo.isEnabled = enabled
+                        binding.btnRedo.alpha = if (enabled) 1f else 0.35f
                     }
                 }
 
@@ -261,7 +268,7 @@ class PdfEditorFragment : Fragment() {
                             is ExportState.Success -> {
                                 hideProgress()
                                 findNavController().navigate(
-                                    com.wantox86.signpdf.R.id.action_pdfEditorFragment_to_pdfPreviewFragment,
+                                    R.id.action_pdfEditorFragment_to_pdfPreviewFragment,
                                     bundleOf(
                                         "filePath" to state.file.absolutePath,
                                         "firstSignedPage" to state.firstSignedPage
@@ -298,6 +305,21 @@ class PdfEditorFragment : Fragment() {
         }
     }
 
+    private fun updateDocumentMeta() {
+        val currentBinding = _binding ?: return
+        if (totalPages <= 0) {
+            currentBinding.tvDocumentMeta.text = ""
+            return
+        }
+        val pageNumber = (currentPageIndex() + 1).coerceIn(1, totalPages)
+        currentBinding.tvDocumentMeta.text = getString(
+            R.string.editor_page_meta,
+            pageNumber,
+            totalPages,
+            currentZoomPercent
+        )
+    }
+
     // Halaman target buat nambah TTD/paraf = halaman yang PALING DOMINAN kelihatan di layar,
     // bukan findFirstVisibleItemPosition() -- yang "first visible" bisa halaman sebelumnya yang
     // cuma nongol beberapa px di ujung atas layar, bikin TTD ketambah ke halaman yang salah
@@ -322,31 +344,6 @@ class PdfEditorFragment : Fragment() {
             }
         }
         return bestIndex
-    }
-
-    // Speed-dial: fab_add_signature cuma toggle visibility+animasi dua FAB yang udah ada
-    // (fab_add_ttd/fab_add_paraf) -- listener asli keduanya nggak diubah sama sekali, cuma
-    // ditambah pemanggilan toggle ini di awal biar menu auto-collapse begitu salah satu dipilih.
-    private fun toggleSignatureMenu() {
-        isSignatureMenuExpanded = !isSignatureMenuExpanded
-        val targets = listOf(binding.fabAddTtd, binding.fabAddParaf)
-        targets.forEach { fab ->
-            if (isSignatureMenuExpanded) {
-                fab.visibility = View.VISIBLE
-                fab.alpha = 0f
-                fab.scaleX = 0f
-                fab.scaleY = 0f
-                fab.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(150).start()
-            } else {
-                fab.animate()
-                    .alpha(0f)
-                    .scaleX(0f)
-                    .scaleY(0f)
-                    .setDuration(150)
-                    .withEndAction { fab.visibility = View.GONE }
-                    .start()
-            }
-        }
     }
 
     private fun showProgress() {

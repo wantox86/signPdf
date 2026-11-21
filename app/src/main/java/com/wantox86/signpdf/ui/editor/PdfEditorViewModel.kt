@@ -49,6 +49,10 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
     val loadError: StateFlow<String?> = _loadError
     private val _documentTitle = MutableStateFlow("")
     val documentTitle: StateFlow<String> = _documentTitle
+    private val _canUndo = MutableStateFlow(false)
+    val canUndo: StateFlow<Boolean> = _canUndo
+    private val _canRedo = MutableStateFlow(false)
+    val canRedo: StateFlow<Boolean> = _canRedo
 
     private var pdfDocument: PdfDocument? = null
     private val undoStack = ArrayDeque<List<SignatureOverlay>>()
@@ -163,12 +167,14 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
         if (undoStack.isEmpty()) return
         redoStack.addLast(_overlays.value)
         _overlays.value = undoStack.removeLast()
+        updateHistoryAvailability()
     }
 
     fun redoOverlay() {
         if (redoStack.isEmpty()) return
         undoStack.addLast(_overlays.value)
         _overlays.value = redoStack.removeLast()
+        updateHistoryAvailability()
     }
 
     fun export() {
@@ -201,6 +207,12 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
     private fun pushHistory() {
         undoStack.addLast(_overlays.value)
         redoStack.clear()
+        updateHistoryAvailability()
+    }
+
+    private fun updateHistoryAvailability() {
+        _canUndo.value = undoStack.isNotEmpty()
+        _canRedo.value = redoStack.isNotEmpty()
     }
 
     fun resetExportState() {
