@@ -1,8 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Corner radius scale -->
+    <!-- Corner radius scale (Ink & Paper Design System) -->
     <dimen name="sp_corner_radius_small">12dp</dimen>
     <dimen name="sp_corner_radius_medium">16dp</dimen>
+    <dimen name="sp_corner_radius_sheet">24dp</dimen>
+    <dimen name="sp_corner_radius_pill">999dp</dimen>
+
+    <!-- Stroke & Handle -->
+    <dimen name="sp_stroke_hairline">1dp</dimen>
+    <dimen name="sp_drag_handle_width">40dp</dimen>
+    <dimen name="sp_drag_handle_height">4dp</dimen>
 
     <!-- Spacing scale -->
     <dimen name="sp_spacing_xs">4dp</dimen>
@@ -15,6 +22,8 @@
     <dimen name="sp_touch_target_min">48dp</dimen>
 
     <!-- Elevation -->
+    <dimen name="sp_elevation_none">0dp</dimen>
     <dimen name="sp_elevation_low">2dp</dimen>
     <dimen name="sp_elevation_medium">4dp</dimen>
+    <dimen name="sp_elevation_dock">8dp</dimen>
 </resources>

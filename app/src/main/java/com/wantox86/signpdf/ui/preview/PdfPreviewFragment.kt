@@ -12,6 +12,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.snackbar.Snackbar
 import com.wantox86.signpdf.databinding.FragmentPdfPreviewBinding
+import com.wantox86.signpdf.ui.common.applyBottomSystemBarPadding
+import com.wantox86.signpdf.ui.common.applyTopSystemBarPadding
 import com.wantox86.signpdf.ui.editor.PdfPageAdapter
 import com.wantox86.signpdf.ui.share.ShareHelper
 import kotlinx.coroutines.flow.collectLatest
@@ -33,6 +35,8 @@ class PdfPreviewFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        binding.toolbarPreview.applyTopSystemBarPadding()
+        binding.toolbarPreviewActions.applyBottomSystemBarPadding()
         binding.recyclerPreviewPages.adapter = adapter
 
         binding.btnBackToEditor.setOnClickListener {

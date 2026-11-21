@@ -19,6 +19,8 @@ import com.wantox86.signpdf.R
 import com.wantox86.signpdf.databinding.FragmentHomeBinding
 import com.wantox86.signpdf.domain.model.AuthState
 import com.wantox86.signpdf.domain.model.SyncState
+import com.wantox86.signpdf.ui.common.applyBottomSystemBarPadding
+import com.wantox86.signpdf.ui.common.applyTopSystemBarPadding
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -44,6 +46,8 @@ class HomeFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        binding.toolbarHome.applyTopSystemBarPadding()
+        binding.root.applyBottomSystemBarPadding()
         binding.btnOpenPdf.setOnClickListener {
             openPdfLauncher.launch(arrayOf("application/pdf"))
         }

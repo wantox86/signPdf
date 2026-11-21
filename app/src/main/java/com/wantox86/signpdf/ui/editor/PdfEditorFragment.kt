@@ -22,6 +22,8 @@ import com.google.android.material.snackbar.Snackbar
 import com.wantox86.signpdf.databinding.FragmentPdfEditorBinding
 import com.wantox86.signpdf.domain.model.OverlayType
 import com.wantox86.signpdf.domain.model.SignatureOverlay
+import com.wantox86.signpdf.ui.common.applyBottomSystemBarPadding
+import com.wantox86.signpdf.ui.common.applyTopSystemBarPadding
 import com.wantox86.signpdf.ui.signature.SignaturePickerBottomSheet
 import com.wantox86.signpdf.ui.signature.SignatureViewModel
 import kotlinx.coroutines.flow.collectLatest
@@ -55,6 +57,8 @@ class PdfEditorFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        binding.toolbarEditor.applyTopSystemBarPadding()
+        binding.bottomBar.applyBottomSystemBarPadding()
         binding.recyclerPdfPages.adapter = adapter
         // notifyItemChanged() default-nya mainin change-animation (crossfade ke ViewHolder
         // pengganti) -- kalau itu kejadian di item yang overlay-nya lagi disentuh, view penerima

@@ -4,15 +4,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/sp_surface"
     android:orientation="vertical"
     android:paddingHorizontal="@dimen/sp_spacing_lg"
     android:paddingTop="@dimen/sp_spacing_sm"
     android:paddingBottom="@dimen/sp_spacing_xl">
 
     <View
-        android:layout_width="32dp"
-        android:layout_height="4dp"
+        android:layout_width="@dimen/sp_drag_handle_width"
+        android:layout_height="@dimen/sp_drag_handle_height"
         android:layout_gravity="center_horizontal"
         android:layout_marginBottom="@dimen/sp_spacing_md"
         android:background="@drawable/bg_drag_handle" />

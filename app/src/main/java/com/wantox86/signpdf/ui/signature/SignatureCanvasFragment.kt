@@ -9,6 +9,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import com.wantox86.signpdf.databinding.FragmentSignatureCanvasBinding
 import com.wantox86.signpdf.domain.model.OverlayType
+import com.wantox86.signpdf.ui.common.applySystemBarPadding
 
 class SignatureCanvasFragment : Fragment() {
 
@@ -27,6 +28,7 @@ class SignatureCanvasFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        binding.root.applySystemBarPadding()
 
         val typeName = arguments?.getString("type") ?: OverlayType.TTD.name
         val type = OverlayType.valueOf(typeName)
