@@ -7,173 +7,390 @@
     android:background="@color/sp_background"
     tools:context=".ui.home.HomeFragment">
 
-    <com.google.android.material.appbar.MaterialToolbar
+    <!-- Edge-to-Edge Top App Bar -->
+    <LinearLayout
         android:id="@+id/toolbar_home"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/sp_surface"
-        android:minHeight="?attr/actionBarSize"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingVertical="8dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/app_name"
-                android:textAppearance="?attr/textAppearanceTitleLarge"
-                android:textColor="@color/sp_text_primary" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/app_subtitle"
-                android:textAppearance="?attr/textAppearanceBodySmall"
-                android:textColor="@color/sp_text_secondary" />
-        </LinearLayout>
-    </com.google.android.material.appbar.MaterialToolbar>
-
-    <!-- Cloud sync status bar: Guest / "cloud username", plus Sync + Log out (or a Login
-         button for Guest). Visibility of the two button groups is toggled in code based on
-         AuthState, never both at once. -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/card_sync_status"
-        style="@style/Widget.Material3.CardView.Outlined"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="@dimen/sp_spacing_md"
-        android:layout_marginTop="@dimen/sp_spacing_sm"
-        app:cardBackgroundColor="@color/sp_surface"
-        app:strokeColor="@color/sp_outline"
-        app:layout_constraintTop_toBottomOf="@id/toolbar_home"
+        android:background="@color/sp_surface"
+        android:gravity="center_vertical"
+        android:minHeight="?attr/actionBarSize"
+        android:orientation="horizontal"
+        android:paddingHorizontal="@dimen/sp_spacing_md"
+        android:paddingVertical="12dp"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintTop_toTopOf="parent">
+
+        <FrameLayout
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@drawable/bg_brand_icon">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_brand_mark" />
+        </FrameLayout>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:text="@string/app_name"
+            android:textAppearance="@style/TextAppearance.SignPDF.AppTitle" />
+
+        <!-- Compact Account Pill (Guest · Log in, or Cloud username + Sync/Logout menu) -->
+        <LinearLayout
+            android:id="@+id/pill_account"
+            android:layout_width="wrap_content"
+            android:layout_height="34dp"
+            android:background="@drawable/bg_account_pill"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="12dp">
+
+            <ImageView
+                android:id="@+id/iv_account_icon"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_user"
+                app:tint="@color/sp_text_secondary" />
+
+            <TextView
+                android:id="@+id/tv_account_pill"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:maxWidth="140dp"
+                android:text="@string/home_account_guest_pill"
+                android:textColor="@color/sp_text_primary"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <View
+        android:id="@+id/divider_toolbar_home"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/sp_stroke_hairline"
+        android:background="@color/sp_outline"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/toolbar_home" />
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scroll_home"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/divider_toolbar_home">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
+            android:orientation="vertical"
             android:paddingHorizontal="@dimen/sp_spacing_md"
-            android:paddingVertical="@dimen/sp_spacing_sm">
+            android:paddingTop="@dimen/sp_spacing_md"
+            android:paddingBottom="@dimen/sp_spacing_lg">
 
+            <!-- Hero Dropzone Card -->
             <LinearLayout
-                android:layout_width="0dp"
+                android:id="@+id/card_dropzone"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
+                android:background="@drawable/bg_dropzone_dashed"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingHorizontal="@dimen/sp_spacing_lg"
+                android:paddingVertical="@dimen/sp_spacing_lg">
+
+                <FrameLayout
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_icon_badge_accent">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_file_signature"
+                        app:tint="@color/sp_accent" />
+                </FrameLayout>
 
                 <TextView
-                    android:id="@+id/tv_auth_status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textAppearance="?attr/textAppearanceLabelLarge"
-                    android:textColor="@color/sp_text_primary"
-                    tools:text="Guest" />
+                    android:layout_marginTop="14dp"
+                    android:text="@string/home_headline"
+                    android:textAlignment="center"
+                    android:textAppearance="@style/TextAppearance.SignPDF.CardHeading"
+                    android:textSize="16sp" />
 
                 <TextView
-                    android:id="@+id/tv_sync_status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textAppearance="?attr/textAppearanceLabelSmall"
-                    android:textColor="@color/sp_text_secondary"
-                    android:visibility="gone"
-                    tools:text="Synced" />
+                    android:layout_marginTop="4dp"
+                    android:text="@string/home_description"
+                    android:textAlignment="center"
+                    android:textAppearance="@style/TextAppearance.SignPDF.Body" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_open_pdf"
+                    style="@style/Widget.SignPDF.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="18dp"
+                    android:text="@string/open_pdf"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    app:icon="@drawable/ic_folder_open"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp"
+                    app:iconSize="18dp"
+                    app:iconTint="@color/sp_on_primary" />
             </LinearLayout>
 
-            <Button
-                android:id="@+id/btn_login_status"
-                style="@style/Widget.SignPDF.Button.Text"
+            <!-- Privacy Pill -->
+            <LinearLayout
+                android:id="@+id/pill_privacy"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/login_button" />
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_pill_success"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp">
 
-            <Button
-                android:id="@+id/btn_sync_status"
-                style="@style/Widget.SignPDF.Button.Text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/sync_button"
-                android:visibility="gone" />
+                <ImageView
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_shield_check"
+                    app:tint="@color/sp_success_text" />
 
-            <Button
-                android:id="@+id/btn_logout_status"
-                style="@style/Widget.SignPDF.Button.Text"
-                android:layout_width="wrap_content"
+                <TextView
+                    android:id="@+id/tv_microcopy"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="@string/home_microcopy"
+                    android:textColor="@color/sp_success_text"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Saved Signatures Strip (2 slots: Sign + Initial, compatible with Cloud Sync) -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/logout_button"
-                android:visibility="gone" />
+                android:layout_marginTop="24dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/home_saved_signatures_title"
+                    android:textAppearance="@style/TextAppearance.SignPDF.Overline" />
+
+                <TextView
+                    android:id="@+id/btn_manage_signatures"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:paddingHorizontal="4dp"
+                    android:paddingVertical="4dp"
+                    android:text="@string/home_saved_signatures_manage"
+                    android:textColor="@color/sp_accent"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:clipToPadding="false"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <!-- Saved Sign (TTD) Slot -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/card_saved_ttd"
+                        style="@style/Widget.SignPDF.Card"
+                        android:layout_width="132dp"
+                        android:layout_height="68dp"
+                        android:layout_marginEnd="10dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:visibility="gone"
+                        app:cardBackgroundColor="@android:color/white"
+                        app:cardCornerRadius="@dimen/sp_corner_radius_small"
+                        tools:visibility="visible">
+
+                        <FrameLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:padding="8dp">
+
+                            <ImageView
+                                android:id="@+id/img_saved_ttd"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:contentDescription="@string/overlay_type_ttd"
+                                android:scaleType="fitCenter" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="bottom|start"
+                                android:text="@string/overlay_type_ttd"
+                                android:textColor="@color/sp_text_secondary"
+                                android:textSize="9sp"
+                                android:textStyle="bold" />
+                        </FrameLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Saved Initial (PARAF) Slot -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/card_saved_paraf"
+                        style="@style/Widget.SignPDF.Card"
+                        android:layout_width="132dp"
+                        android:layout_height="68dp"
+                        android:layout_marginEnd="10dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:visibility="gone"
+                        app:cardBackgroundColor="@android:color/white"
+                        app:cardCornerRadius="@dimen/sp_corner_radius_small"
+                        tools:visibility="visible">
+
+                        <FrameLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:padding="8dp">
+
+                            <ImageView
+                                android:id="@+id/img_saved_paraf"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:contentDescription="@string/overlay_type_paraf"
+                                android:scaleType="fitCenter" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="bottom|start"
+                                android:text="@string/overlay_type_paraf"
+                                android:textColor="@color/sp_text_secondary"
+                                android:textSize="9sp"
+                                android:textStyle="bold" />
+                        </FrameLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Dashed "+ New" Slot -->
+                    <LinearLayout
+                        android:id="@+id/btn_new_signature"
+                        android:layout_width="88dp"
+                        android:layout_height="68dp"
+                        android:background="@drawable/bg_slot_dashed"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackgroundBorderless"
+                        android:gravity="center"
+                        android:orientation="vertical">
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_add"
+                            app:tint="@color/sp_text_secondary" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="@string/home_saved_signature_new"
+                            android:textColor="@color/sp_text_secondary"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <!-- Recent Documents Section -->
+            <LinearLayout
+                android:id="@+id/section_recent_documents"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:orientation="vertical"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/home_recent_documents_title"
+                        android:textAppearance="@style/TextAppearance.SignPDF.Overline" />
+
+                    <TextView
+                        android:id="@+id/tv_recent_count"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.SignPDF.Body"
+                        tools:text="3 files" />
+                </LinearLayout>
+
+                <com.google.android.material.card.MaterialCardView
+                    style="@style/Widget.SignPDF.Card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp">
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recycler_recent_documents"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                        tools:itemCount="3"
+                        tools:listitem="@layout/item_recent_document" />
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
         </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
-    <!-- Centers the hero illustration + headline + description as a group within the space
-         between the toolbar and the primary button, so this layer never has to fight the
-         button/microcopy anchored to the bottom. -->
-    <LinearLayout
-        android:id="@+id/content_center"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:paddingHorizontal="@dimen/sp_spacing_xl"
-        app:layout_constraintTop_toBottomOf="@id/card_sync_status"
-        app:layout_constraintBottom_toTopOf="@id/btn_open_pdf"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <ImageView
-            android:layout_width="120dp"
-            android:layout_height="120dp"
-            android:src="@drawable/ic_document_hero"
-            android:contentDescription="@null"
-            android:layout_marginBottom="@dimen/sp_spacing_lg" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/home_headline"
-            android:textAppearance="?attr/textAppearanceHeadlineSmall"
-            android:textColor="@color/sp_text_primary"
-            android:textAlignment="center"
-            android:layout_marginBottom="@dimen/sp_spacing_sm" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/home_description"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
-            android:textColor="@color/sp_text_secondary"
-            android:textAlignment="center" />
-    </LinearLayout>
-
-    <Button
-        android:id="@+id/btn_open_pdf"
-        android:layout_width="0dp"
-        android:layout_height="56dp"
-        android:text="@string/open_pdf"
-        android:textAppearance="?attr/textAppearanceTitleMedium"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/tv_microcopy"
-        android:layout_marginHorizontal="@dimen/sp_spacing_lg"
-        android:layout_marginBottom="@dimen/sp_spacing_md" />
-
-    <TextView
-        android:id="@+id/tv_microcopy"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/home_microcopy"
-        android:textAppearance="?attr/textAppearanceLabelSmall"
-        android:textColor="@color/sp_text_secondary"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        android:layout_marginBottom="@dimen/sp_spacing_lg" />
+    </androidx.core.widget.NestedScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

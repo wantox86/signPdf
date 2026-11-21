@@ -15,6 +15,9 @@
         <action
             android:id="@+id/action_homeFragment_to_loginFragment"
             app:destination="@id/loginFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_signatureCanvasFragment"
+            app:destination="@id/signatureCanvasFragment" />
     </fragment>
 
     <fragment
