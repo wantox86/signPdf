@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import android.provider.OpenableColumns
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.tom_roush.pdfbox.pdmodel.PDDocument
@@ -161,6 +162,19 @@ class PdfEditorViewModel(app: Application) : AndroidViewModel(app) {
         if (_overlays.value == newOverlays) return
         pushHistory()
         _overlays.value = newOverlays
+    }
+
+    fun updateOverlaysForPage(pageIndex: Int, overlaysForPage: List<SignatureOverlay>) {
+        val currentForPage = _overlays.value.filter { it.pageIndex == pageIndex }
+        if (currentForPage == overlaysForPage) return
+        val merged = _overlays.value.filter { it.pageIndex != pageIndex } + overlaysForPage
+        pushHistory()
+        _overlays.value = merged
+    }
+
+    @VisibleForTesting
+    internal fun setPagesForTesting(pages: List<Bitmap?>) {
+        _pages.value = pages
     }
 
     fun undoOverlay() {

@@ -330,8 +330,7 @@
                 android:layout_width="26dp"
                 android:layout_height="26dp"
                 android:layout_marginEnd="8dp"
-                android:background="@drawable/bg_ink_dot"
-                android:backgroundTint="@color/sp_ink_black"
+                android:background="@drawable/bg_ink_dot_black"
                 android:clickable="true"
                 android:contentDescription="@string/ink_black"
                 android:focusable="true" />
@@ -341,8 +340,7 @@
                 android:layout_width="26dp"
                 android:layout_height="26dp"
                 android:layout_marginEnd="8dp"
-                android:background="@drawable/bg_ink_dot"
-                android:backgroundTint="@color/sp_ink_blue"
+                android:background="@drawable/bg_ink_dot_blue"
                 android:clickable="true"
                 android:contentDescription="@string/ink_blue"
                 android:focusable="true" />
@@ -351,8 +349,7 @@
                 android:id="@+id/dot_ink_crimson"
                 android:layout_width="26dp"
                 android:layout_height="26dp"
-                android:background="@drawable/bg_ink_dot"
-                android:backgroundTint="@color/sp_ink_crimson"
+                android:background="@drawable/bg_ink_dot_crimson"
                 android:clickable="true"
                 android:contentDescription="@string/ink_crimson"
                 android:focusable="true" />

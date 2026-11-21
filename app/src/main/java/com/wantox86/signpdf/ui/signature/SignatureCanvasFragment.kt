@@ -95,7 +95,7 @@ class SignatureCanvasFragment : Fragment() {
             val selected = dot === selectedView
             dot.scaleX = if (selected) 1.18f else 0.92f
             dot.scaleY = if (selected) 1.18f else 0.92f
-            dot.alpha = if (selected) 1f else 0.55f
+            dot.alpha = if (selected) 1f else 0.7f
         }
     }
 

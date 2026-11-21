@@ -23,7 +23,6 @@ import com.google.android.material.snackbar.Snackbar
 import com.wantox86.signpdf.R
 import com.wantox86.signpdf.databinding.FragmentPdfEditorBinding
 import com.wantox86.signpdf.domain.model.OverlayType
-import com.wantox86.signpdf.domain.model.SignatureOverlay
 import com.wantox86.signpdf.ui.common.applyBottomSystemBarMargin
 import com.wantox86.signpdf.ui.common.applyTopSystemBarPadding
 import com.wantox86.signpdf.ui.signature.SignaturePickerBottomSheet
@@ -41,7 +40,6 @@ class PdfEditorFragment : Fragment() {
     private var pendingImportType: OverlayType = OverlayType.TTD
     private var awaitingOverlayType: OverlayType? = null
     private var awaitingPreviousBitmapRef: Any? = null
-    private var allOverlays: List<SignatureOverlay> = emptyList()
     private var progressDialog: AlertDialog? = null
     private var totalPages: Int = 0
     private var currentZoomPercent: Int = 100
@@ -49,7 +47,11 @@ class PdfEditorFragment : Fragment() {
     private val importImageLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let { signatureViewModel.importFromUri(it, pendingImportType) }
+        if (uri != null) {
+            signatureViewModel.importFromUri(uri, pendingImportType)
+        } else {
+            clearAwaitingOverlay()
+        }
     }
 
     override fun onCreateView(
@@ -75,8 +77,7 @@ class PdfEditorFragment : Fragment() {
         // dari adapter, nggak perlu nebak/remap pakai currentPageIndex() lagi kayak desain lama
         // (yang jadi sumber bug overlay ke-taruh di halaman salah pas scroll).
         adapter.onOverlaysChangedForPage = { pageIndex, overlaysForThatPage ->
-            val merged = allOverlays.filter { it.pageIndex != pageIndex } + overlaysForThatPage
-            viewModel.updateOverlays(merged)
+            viewModel.updateOverlaysForPage(pageIndex, overlaysForThatPage)
         }
 
         binding.recyclerPdfPages.addOnScrollListener(object : RecyclerView.OnScrollListener() {
@@ -107,6 +108,9 @@ class PdfEditorFragment : Fragment() {
         }
 
         binding.btnDockSign.setOnClickListener {
+            // Bersihin state awaiting sisa dari flow import/canvas yang dibatalkan sebelumnya
+            // biar saveBitmapNow() dari inline draw tidak memicu addOverlay() dua kali.
+            clearAwaitingOverlay()
             SignaturePickerBottomSheet.newInstance(
                 overlayType = OverlayType.TTD,
                 hasSavedSignature = signatureViewModel.ttdBitmap.value != null
@@ -114,6 +118,7 @@ class PdfEditorFragment : Fragment() {
         }
 
         binding.btnDockInitial.setOnClickListener {
+            clearAwaitingOverlay()
             SignaturePickerBottomSheet.newInstance(
                 overlayType = OverlayType.PARAF,
                 hasSavedSignature = signatureViewModel.parafBitmap.value != null
@@ -152,6 +157,7 @@ class PdfEditorFragment : Fragment() {
                 }
 
                 "saved" -> {
+                    clearAwaitingOverlay()
                     val savedBitmap = when (overlayType) {
                         OverlayType.TTD -> signatureViewModel.ttdBitmap.value
                         OverlayType.PARAF -> signatureViewModel.parafBitmap.value
@@ -247,7 +253,6 @@ class PdfEditorFragment : Fragment() {
 
                 launch {
                     viewModel.overlays.collectLatest { overlays ->
-                        allOverlays = overlays
                         adapter.setOverlays(overlays)
                     }
                 }
@@ -260,8 +265,7 @@ class PdfEditorFragment : Fragment() {
                             bitmap !== awaitingPreviousBitmapRef
                         ) {
                             viewModel.addOverlay(OverlayType.TTD, bitmap, currentPageIndex())
-                            awaitingOverlayType = null
-                            awaitingPreviousBitmapRef = null
+                            clearAwaitingOverlay()
                         }
                     }
                 }
@@ -274,8 +278,7 @@ class PdfEditorFragment : Fragment() {
                             bitmap !== awaitingPreviousBitmapRef
                         ) {
                             viewModel.addOverlay(OverlayType.PARAF, bitmap, currentPageIndex())
-                            awaitingOverlayType = null
-                            awaitingPreviousBitmapRef = null
+                            clearAwaitingOverlay()
                         }
                     }
                 }
@@ -377,6 +380,11 @@ class PdfEditorFragment : Fragment() {
     private fun hideProgress() {
         progressDialog?.dismiss()
         progressDialog = null
+    }
+
+    private fun clearAwaitingOverlay() {
+        awaitingOverlayType = null
+        awaitingPreviousBitmapRef = null
     }
 
     override fun onDestroyView() {

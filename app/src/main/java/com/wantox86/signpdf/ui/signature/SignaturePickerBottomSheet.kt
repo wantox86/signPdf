@@ -25,6 +25,7 @@ class SignaturePickerBottomSheet : BottomSheetDialogFragment() {
     private var _binding: BottomsheetSignaturePickerBinding? = null
     private val binding get() = _binding!!
     private val signatureViewModel: SignatureViewModel by activityViewModels()
+    private var isSubmitted = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -58,6 +59,8 @@ class SignaturePickerBottomSheet : BottomSheetDialogFragment() {
 
         // 1-tap place from saved TTD or PARAF slots
         binding.cardSheetSavedTtd.setOnClickListener {
+            if (isSubmitted) return@setOnClickListener
+            isSubmitted = true
             parentFragmentManager.setFragmentResult(
                 RESULT_KEY,
                 bundleOf("action" to "saved", "type" to OverlayType.TTD.name)
@@ -66,6 +69,8 @@ class SignaturePickerBottomSheet : BottomSheetDialogFragment() {
         }
 
         binding.cardSheetSavedParaf.setOnClickListener {
+            if (isSubmitted) return@setOnClickListener
+            isSubmitted = true
             parentFragmentManager.setFragmentResult(
                 RESULT_KEY,
                 bundleOf("action" to "saved", "type" to OverlayType.PARAF.name)
@@ -108,7 +113,9 @@ class SignaturePickerBottomSheet : BottomSheetDialogFragment() {
             }
 
             override fun onSigned() {
-                binding.btnUseSignature.isEnabled = true
+                if (!isSubmitted) {
+                    binding.btnUseSignature.isEnabled = true
+                }
             }
 
             override fun onClear() {
@@ -122,7 +129,8 @@ class SignaturePickerBottomSheet : BottomSheetDialogFragment() {
         }
 
         binding.btnUseSignature.setOnClickListener {
-            if (binding.signaturePadInline.isEmpty) return@setOnClickListener
+            if (isSubmitted || binding.signaturePadInline.isEmpty) return@setOnClickListener
+            isSubmitted = true
             val bitmap = binding.signaturePadInline.transparentSignatureBitmap
             binding.btnUseSignature.isEnabled = false
             viewLifecycleOwner.lifecycleScope.launch {
@@ -183,7 +191,7 @@ class SignaturePickerBottomSheet : BottomSheetDialogFragment() {
             val selected = dot === selectedView
             dot.scaleX = if (selected) 1.18f else 0.92f
             dot.scaleY = if (selected) 1.18f else 0.92f
-            dot.alpha = if (selected) 1f else 0.55f
+            dot.alpha = if (selected) 1f else 0.7f
         }
     }
 

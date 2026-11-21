@@ -10,7 +10,9 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
+import android.view.ViewConfiguration
 import com.wantox86.signpdf.domain.model.SignatureOverlay
+import kotlin.math.hypot
 import kotlin.math.max
 
 /**
@@ -32,6 +34,10 @@ class SignatureOverlayView @JvmOverloads constructor(
     private var selectedOverlayId: String? = null
     private var lastTouchX = 0f
     private var lastTouchY = 0f
+    private var downScreenX = 0f
+    private var downScreenY = 0f
+    private var isDragging = false
+    private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop.toFloat()
 
     // Perubahan drag/resize di-commit ke luar (onOverlaysChanged) SEKALI pas gesture selesai
     // (ACTION_UP/CANCEL), bukan per event move -- commit per-move bikin Fragment/adapter
@@ -181,6 +187,9 @@ class SignatureOverlayView @JvmOverloads constructor(
                 selectedOverlayId = touched?.id
                 lastTouchX = touchX
                 lastTouchY = touchY
+                downScreenX = event.x
+                downScreenY = event.y
+                isDragging = false
                 invalidate()
                 // Overlay ini sekarang hidup di dalam item RecyclerView -- kalau nangkep drag,
                 // cegah parent (RecyclerView) ikut interpretasi gesture yang sama sebagai
@@ -201,6 +210,16 @@ class SignatureOverlayView @JvmOverloads constructor(
                 }
 
                 val selected = selectedOverlay() ?: return false
+                // Abaikan micro-jitter di bawah touchSlop saat tap/select overlay agar tidak
+                // mendorong snapshot perubahan posisi palsu ke undo stack.
+                if (!isDragging) {
+                    val movedDist = hypot(event.x - downScreenX, event.y - downScreenY)
+                    if (movedDist < touchSlop) {
+                        return true
+                    }
+                    isDragging = true
+                }
+
                 val dx = touchX - lastTouchX
                 val dy = touchY - lastTouchY
                 lastTouchX = touchX
@@ -217,6 +236,7 @@ class SignatureOverlayView @JvmOverloads constructor(
 
             MotionEvent.ACTION_UP,
             MotionEvent.ACTION_CANCEL -> {
+                isDragging = false
                 parent?.requestDisallowInterceptTouchEvent(false)
                 if (hasPendingCommit) {
                     hasPendingCommit = false
@@ -238,6 +258,7 @@ class SignatureOverlayView @JvmOverloads constructor(
         val idx = overlays.indexOfFirst { it.id == overlay.id }
         if (idx >= 0) {
             val clamped = clampToPage(overlay)
+            if (clamped == overlays[idx]) return
             overlays[idx] = clamped
             // Update visual lokal doang -- commit ke luar ditunda sampai gesture selesai
             // (lihat komentar hasPendingCommit).

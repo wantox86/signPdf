@@ -48,6 +48,7 @@
     <color name="sp_ink_black">#0F172A</color>
     <color name="sp_ink_blue">#1D4ED8</color>
     <color name="sp_ink_crimson">#B91C1C</color>
+    <color name="sp_ink_dot_ring">#CBD5E1</color>
 
     <!-- Modal backdrop scrim -->
     <color name="sp_scrim">#80020617</color>
